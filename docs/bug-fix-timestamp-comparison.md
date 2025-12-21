@@ -15,6 +15,7 @@
 ### The Evidence
 
 User logs revealed the smoking gun:
+
 ```
 [addEntry] Entry inserted: {"id": "...", "timestamp": 1735000000000}
 [addEntry] Invalidating query cache...
@@ -23,6 +24,7 @@ User logs revealed the smoking gun:
 ```
 
 Key observations:
+
 1. Entry **was** inserted with a valid timestamp
 2. Cache **was** invalidated correctly
 3. Query **was** triggered to refetch
@@ -31,17 +33,20 @@ Key observations:
 ### The Technical Issue
 
 **Database Schema:**
+
 ```typescript
 // db/schema.ts
-timestamp: integer("timestamp", { mode: "timestamp" }).notNull()
+timestamp: integer("timestamp", { mode: "timestamp" }).notNull();
 ```
 
 Drizzle's `{ mode: "timestamp" }` means:
+
 - **Storage**: Convert Date → INTEGER milliseconds
 - **Retrieval**: Convert INTEGER milliseconds → Date
 - **Queries**: Does NOT auto-convert Date objects in WHERE clauses ❌
 
 **The Buggy Query:**
+
 ```typescript
 // hooks/useGoalTotal.ts (BEFORE)
 const periodStart = calculatePeriodStart(...); // Returns Date object
@@ -58,10 +63,11 @@ const result = await db
 ```
 
 **What SQLite Sees:**
+
 ```sql
-SELECT SUM(amount) as total 
-FROM entries 
-WHERE goalId = ? 
+SELECT SUM(amount) as total
+FROM entries
+WHERE goalId = ?
   AND timestamp >= <Date object>  -- ❌ Type mismatch!
 ```
 
@@ -79,7 +85,7 @@ const ms = date.getTime(); // 1704067200000
 console.log(ms >= date); // true
 
 // SQL: Fails (no auto-conversion)
-gte(entries.timestamp, date) // WHERE timestamp >= <Date> → FALSE
+gte(entries.timestamp, date); // WHERE timestamp >= <Date> → FALSE
 ```
 
 ---
@@ -91,6 +97,7 @@ gte(entries.timestamp, date) // WHERE timestamp >= <Date> → FALSE
 **File: `hooks/useGoalTotal.ts`**
 
 **Lines 68-72:**
+
 ```typescript
 // Convert Date to milliseconds BEFORE query
 const periodStartMs = periodStart.getTime();
@@ -107,10 +114,11 @@ const result = await db
 ```
 
 **What SQLite Now Sees:**
+
 ```sql
-SELECT SUM(amount) as total 
-FROM entries 
-WHERE goalId = ? 
+SELECT SUM(amount) as total
+FROM entries
+WHERE goalId = ?
   AND timestamp >= 1704067200000  -- ✅ INTEGER >= INTEGER works!
 ```
 
@@ -123,8 +131,9 @@ WHERE goalId = ?
 Added comprehensive logging to trace the issue:
 
 **In `useGoalTotal.ts`:**
+
 ```typescript
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   console.log("[useGoalTotal] Period start (Date):", periodStart.toISOString());
   console.log("[useGoalTotal] Period start (ms):", periodStartMs);
   console.log("[useGoalTotal] Current time (ms):", Date.now());
@@ -132,8 +141,9 @@ if (process.env.NODE_ENV !== 'test') {
 ```
 
 **In `useGoalActions.ts`:**
+
 ```typescript
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   console.log("[addEntry] Timestamp (Date):", now.toISOString());
   console.log("[addEntry] Timestamp (ms):", nowMs);
   console.log("[addEntry] Entry inserted:", {
@@ -145,15 +155,20 @@ if (process.env.NODE_ENV !== 'test') {
 ```
 
 **Debug Query (only runs if total is 0):**
+
 ```typescript
-if (newTotal === 0 && process.env.NODE_ENV !== 'test') {
-  const allEntries = await db.select()
+if (newTotal === 0 && process.env.NODE_ENV !== "test") {
+  const allEntries = await db
+    .select()
     .from(entries)
     .where(eq(entries.goalId, goal.id));
-  
+
   if (allEntries.length > 0) {
-    console.warn("[useGoalTotal] WARNING: Found", allEntries.length, 
-                 "entries but total is 0");
+    console.warn(
+      "[useGoalTotal] WARNING: Found",
+      allEntries.length,
+      "entries but total is 0"
+    );
     // This indicates the WHERE clause is filtering out valid entries
   }
 }
@@ -168,7 +183,7 @@ if (newTotal === 0 && process.env.NODE_ENV !== 'test') {
 **1. Timestamp Comparison Tests** (`__tests__/timestamp-fix-verification.test.ts`)
 
 ```typescript
-it('should convert Date to milliseconds for timestamp comparison', () => {
+it("should convert Date to milliseconds for timestamp comparison", () => {
   const periodStart = new Date("2024-01-01T00:00:00.000Z");
   const periodStartMs = periodStart.getTime(); // 1704067200000
 
@@ -180,15 +195,15 @@ it('should convert Date to milliseconds for timestamp comparison', () => {
   const afterPeriodStart = mockEntries.filter(
     (e) => e.timestamp >= periodStartMs
   );
-  
+
   expect(afterPeriodStart).toHaveLength(2);
 });
 
-it('should handle boundary cases correctly', () => {
+it("should handle boundary cases correctly", () => {
   // Tests: just before, exactly at, just after period start
 });
 
-it('should handle Date vs millisecond type mismatch', () => {
+it("should handle Date vs millisecond type mismatch", () => {
   // Demonstrates the difference between JS coercion and SQL comparison
 });
 ```
@@ -196,6 +211,7 @@ it('should handle Date vs millisecond type mismatch', () => {
 **2. Updated Existing Tests**
 
 Modified test mocks to avoid calling debug queries:
+
 - Wrapped debug logging in `NODE_ENV !== 'test'` checks
 - Made debug queries optional and error-resistant
 - All 134 tests passing
@@ -217,17 +233,20 @@ Tests:       134 passed, 134 total
 ## Verification Steps
 
 ### 1. Run Tests
+
 ```bash
 npm test
 # Should show: Tests: 134 passed, 134 total
 ```
 
 ### 2. Test in App
+
 ```bash
 npm start
 ```
 
 Then:
+
 1. Create or select a goal
 2. Click Quick Add button
 3. ✅ Current value should update immediately
@@ -239,6 +258,7 @@ Then:
    ```
 
 ### 3. Verify Edge Cases
+
 - Add entry at exact period boundary (midnight for daily goals)
 - Add multiple entries rapidly
 - Switch between goals
@@ -254,7 +274,8 @@ A separate but related issue was also fixed (documented in `bug-fix-quick-add-no
 
 **Problem**: Subscription dependency array included `fetchTotal`, causing unnecessary re-subscriptions.
 
-**Fix**: 
+**Fix**:
+
 ```typescript
 // BEFORE
 }, [goal.id, fetchTotal]); // ❌ Caused re-subscriptions
@@ -270,32 +291,35 @@ Both issues contributed to the "Quick Add not updating" problem.
 ## Technical Lessons Learned
 
 ### 1. Drizzle Timestamp Mode
+
 ```typescript
-integer("timestamp", { mode: "timestamp" })
+integer("timestamp", { mode: "timestamp" });
 ```
 
 - **Inserts**: Auto-converts Date → milliseconds ✅
-- **Selects**: Auto-converts milliseconds → Date ✅  
+- **Selects**: Auto-converts milliseconds → Date ✅
 - **WHERE clauses**: Does NOT auto-convert Date → milliseconds ❌
 
 ### 2. Type Safety Best Practices
 
 Always use milliseconds in queries:
+
 ```typescript
 // ✅ GOOD
 const ms = date.getTime();
-gte(column, ms)
+gte(column, ms);
 
 // ❌ BAD
-gte(column, date)
+gte(column, date);
 ```
 
 ### 3. JavaScript vs SQL Comparisons
 
 Don't rely on JavaScript's type coercion working in SQL:
+
 ```typescript
 // JavaScript: true (coerces)
-1000 >= new Date(0) 
+1000 >= new Date(0)
 
 // SQL: false (no coercion)
 WHERE timestamp >= <Date object>
@@ -306,6 +330,7 @@ WHERE timestamp >= <Date object>
 ## Future Improvements
 
 1. **Type Safety**: Create utility function to enforce millisecond usage:
+
    ```typescript
    function toTimestampMs(date: Date | number): number {
      return date instanceof Date ? date.getTime() : date;
@@ -313,8 +338,9 @@ WHERE timestamp >= <Date object>
    ```
 
 2. **Performance**: Add composite index:
+
    ```typescript
-   index("entries_goal_timestamp_idx").on(entries.goalId, entries.timestamp)
+   index("entries_goal_timestamp_idx").on(entries.goalId, entries.timestamp);
    ```
 
 3. **Logging**: Reduce verbosity after verification period, keep only error logs
@@ -335,4 +361,5 @@ WHERE timestamp >= <Date object>
 ---
 
 ## Date
+
 December 2024

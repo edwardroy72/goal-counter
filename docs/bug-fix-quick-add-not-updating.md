@@ -37,6 +37,7 @@ useEffect(() => {
 ### The Data Flow
 
 When Quick Add is clicked:
+
 1. `addEntry` inserts entry into database
 2. `addEntry` calls `queryCache.invalidate()`
 3. Query cache notifies all subscribers
@@ -60,6 +61,7 @@ useEffect(() => {
 ```
 
 **Why this works**:
+
 - Subscription stays stable as long as the goal is the same
 - `fetchTotal` is captured in the closure and always references the latest version
 - No subscription recreation during normal operations
@@ -77,7 +79,7 @@ useEffect(() => {
    - Ensures all invalidations are processed
 
 ```typescript
-it('should maintain stable subscription when fetchTotal updates', async () => {
+it("should maintain stable subscription when fetchTotal updates", async () => {
   // Verifies subscribe is called only once
   // Tests multiple invalidations
   // Confirms subscription doesn't get recreated
@@ -85,6 +87,7 @@ it('should maintain stable subscription when fetchTotal updates', async () => {
 ```
 
 2. **Race Condition Test**
+
    - Tests invalidation immediately after mount
    - Verifies rapid concurrent invalidations
    - Ensures no invalidations are missed
@@ -102,10 +105,12 @@ it('should maintain stable subscription when fetchTotal updates', async () => {
 When implementing subscriptions in React hooks:
 
 1. **Keep Dependency Arrays Minimal**
+
    - Only include primitive values (IDs, keys)
    - Avoid including callback functions
 
 2. **Use Closure Capture for Callbacks**
+
    ```typescript
    useEffect(() => {
      const unsubscribe = subscribe(() => {
@@ -117,18 +122,20 @@ When implementing subscriptions in React hooks:
    ```
 
 3. **Test Subscription Stability**
+
    - Verify subscriptions aren't recreated unnecessarily
    - Test rapid mutations and invalidations
    - Check that all events are received
 
 4. **Watch for These Patterns**
+
    ```typescript
    // ❌ Dangerous - causes re-subscription
    useEffect(() => {
      const unsub = subscribe(callback);
      return unsub;
    }, [callback]); // callback is a function!
-   
+
    // ✅ Safe - stable subscription
    useEffect(() => {
      const unsub = subscribe(() => doSomething());
@@ -152,12 +159,15 @@ When reviewing hooks with subscriptions:
 ## Related Code
 
 ### Files Modified
+
 - `hooks/useGoalTotal.ts` - Fixed subscription dependency array
 
 ### Tests Updated
+
 - `__tests__/hooks/useGoalTotal.test.ts` - Added subscription stability tests
 
 ### Files Involved in Data Flow
+
 - `hooks/useGoalActions.ts` - Calls `queryCache.invalidate()` after mutations
 - `db/query-cache.ts` - Manages subscriptions and invalidations
 - `components/GoalCard.tsx` - Displays the current total from `useGoalTotal`
@@ -170,12 +180,15 @@ When reviewing hooks with subscriptions:
 To verify the fix works:
 
 1. **Run Tests**
+
    ```bash
    npm test -- __tests__/hooks/useGoalTotal.test.ts
    ```
+
    All 22 tests should pass, including the 3 new subscription stability tests.
 
 2. **Manual Testing**
+
    - Open the app
    - Create a goal
    - Click Quick Add
@@ -201,16 +214,19 @@ To verify the fix works:
 ## Future Improvements
 
 1. **Consider Using React Query or similar**
+
    - Automatic cache invalidation
    - Built-in subscription management
    - Handles race conditions internally
 
 2. **Add Performance Monitoring**
+
    - Track subscription lifecycle
    - Monitor invalidation frequency
    - Detect potential memory leaks
 
 3. **Implement Optimistic Updates**
+
    - Update UI immediately on Quick Add
    - Rollback if database fails
    - Improves perceived performance
@@ -225,15 +241,18 @@ To verify the fix works:
 ## Lessons Learned
 
 1. **Subscriptions and Dependency Arrays Don't Mix**
+
    - React's exhaustive-deps rule can lead you astray
    - Sometimes you need to disable it with understanding
 
 2. **Race Conditions Are Subtle**
+
    - The bug only occurred during the brief window of subscription recreation
    - Could appear intermittent or timing-dependent
    - Tests must specifically target race conditions
 
 3. **Trust Console Logs**
+
    - The extensive logging helped identify the issue
    - Saw subscriptions being created/destroyed repeatedly
    - Helped verify the fix worked
@@ -252,4 +271,5 @@ To verify the fix works:
 - Testing Async Code: https://testing-library.com/docs/dom-testing-library/api-async/
 
 ## Date
+
 December 22, 2025

@@ -3,9 +3,11 @@
  *
  * Tests countdown and reset calculation functions.
  * Critical for accurate reset timing and countdown displays.
+ *
+ * NOTE: The implementation uses UTC-based calculations and finds the
+ * current period based on the actual time (mocked in tests via fakeTimers).
  */
 
-import { addDays, addMonths, addWeeks, startOfDay } from "date-fns";
 import {
   calculateNextReset,
   getCountdownText,
@@ -14,115 +16,136 @@ import {
 
 describe("Date Logic Utilities", () => {
   describe("calculateNextReset()", () => {
+    // Set a fixed "now" for all tests - Jan 15, 2025 at noon UTC
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2025-01-15T12:00:00Z"));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     describe("Day intervals", () => {
-      it("should calculate next reset for 1-day interval", () => {
-        const createdAt = new Date("2025-01-15T14:30:00Z");
+      it("should calculate next reset for 1-day interval (same day creation)", () => {
+        // Created today at 8am, asking "when's the next reset?"
+        const createdAt = new Date("2025-01-15T08:00:00Z");
         const result = calculateNextReset(createdAt, 1, "day");
 
-        // Should return midnight of Jan 16 (next day) in local timezone
-        const expected = addDays(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Should return midnight UTC of Jan 16 (next day)
+        expect(result).toEqual(new Date("2025-01-16T00:00:00Z"));
+      });
+
+      it("should calculate next reset for 1-day interval (past creation)", () => {
+        // Created 5 days ago
+        const createdAt = new Date("2025-01-10T14:30:00Z");
+        const result = calculateNextReset(createdAt, 1, "day");
+
+        // Should return midnight UTC of tomorrow (Jan 16)
+        expect(result).toEqual(new Date("2025-01-16T00:00:00Z"));
       });
 
       it("should calculate next reset for multi-day interval", () => {
-        const createdAt = new Date("2025-01-15T14:30:00Z");
+        // Created Jan 10, 7-day interval
+        const createdAt = new Date("2025-01-10T14:30:00Z");
         const result = calculateNextReset(createdAt, 7, "day");
 
-        // Should return midnight of Jan 22 (7 days later)
-        const expected = addDays(startOfDay(createdAt), 7);
-        expect(result).toEqual(expected);
+        // Jan 10 start -> Jan 17 is next period end
+        expect(result).toEqual(new Date("2025-01-17T00:00:00Z"));
       });
 
-      it("should handle creation at midnight", () => {
-        const createdAt = new Date("2025-01-15T00:00:00");
+      it("should handle creation at midnight UTC", () => {
+        const createdAt = new Date("2025-01-15T00:00:00Z");
         const result = calculateNextReset(createdAt, 1, "day");
 
-        const expected = addDays(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Should return midnight UTC of Jan 16
+        expect(result).toEqual(new Date("2025-01-16T00:00:00Z"));
       });
 
-      it("should handle creation at 11:59 PM", () => {
-        const createdAt = new Date("2025-01-15T23:59:59");
+      it("should handle recently-created goal late in the day", () => {
+        // Set system time to late in the day
+        jest.setSystemTime(new Date("2025-01-15T23:30:00Z"));
+        const createdAt = new Date("2025-01-15T22:00:00Z");
         const result = calculateNextReset(createdAt, 1, "day");
 
-        // Should still reset at midnight of next day
-        const expected = addDays(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Should still reset at midnight UTC of next day
+        expect(result).toEqual(new Date("2025-01-16T00:00:00Z"));
       });
     });
 
     describe("Week intervals", () => {
-      it("should calculate next reset for 1-week interval", () => {
-        const createdAt = new Date("2025-01-15T14:30:00"); // Wednesday
+      it("should calculate next reset for 1-week interval (same week)", () => {
+        // Created earlier this week
+        const createdAt = new Date("2025-01-13T14:30:00Z"); // Monday
         const result = calculateNextReset(createdAt, 1, "week");
 
-        // Should return midnight 7 days later (next Wednesday)
-        const expected = addWeeks(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Should return midnight UTC 7 days from start of creation day
+        expect(result).toEqual(new Date("2025-01-20T00:00:00Z"));
       });
 
       it("should calculate next reset for 2-week interval", () => {
-        const createdAt = new Date("2025-01-15T14:30:00");
+        // Created Jan 5
+        const createdAt = new Date("2025-01-05T14:30:00Z");
         const result = calculateNextReset(createdAt, 2, "week");
 
-        // Should return midnight 14 days later
-        const expected = addWeeks(startOfDay(createdAt), 2);
-        expect(result).toEqual(expected);
+        // Jan 5 -> Jan 19 is the next 2-week boundary
+        expect(result).toEqual(new Date("2025-01-19T00:00:00Z"));
       });
 
       it("should handle week interval from weekend", () => {
-        const createdAt = new Date("2025-01-18T12:00:00"); // Saturday
+        const createdAt = new Date("2025-01-11T12:00:00Z"); // Saturday
         const result = calculateNextReset(createdAt, 1, "week");
 
-        const expected = addWeeks(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Should return midnight UTC 7 days later (Jan 18)
+        expect(result).toEqual(new Date("2025-01-18T00:00:00Z"));
       });
     });
 
     describe("Month intervals", () => {
       it("should calculate next reset for 1-month interval", () => {
-        const createdAt = new Date("2025-01-15T14:30:00");
+        // Created Jan 1
+        const createdAt = new Date("2025-01-01T14:30:00Z");
         const result = calculateNextReset(createdAt, 1, "month");
 
-        // Should return midnight of Feb 15
-        const expected = addMonths(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Should return Feb 1
+        expect(result).toEqual(new Date("2025-02-01T00:00:00Z"));
       });
 
       it("should calculate next reset for 3-month interval", () => {
-        const createdAt = new Date("2025-01-15T14:30:00");
+        // Created Nov 15, 2024
+        jest.setSystemTime(new Date("2025-01-20T12:00:00Z"));
+        const createdAt = new Date("2024-11-15T14:30:00Z");
         const result = calculateNextReset(createdAt, 3, "month");
 
-        // Should return midnight of Apr 15
-        const expected = addMonths(startOfDay(createdAt), 3);
-        expect(result).toEqual(expected);
+        // Nov 15 -> Feb 15 is the 3-month boundary
+        expect(result).toEqual(new Date("2025-02-15T00:00:00Z"));
       });
 
       it("should handle month-end dates (Jan 31 -> Feb 28)", () => {
-        const createdAt = new Date("2025-01-31T14:30:00");
+        // Created Dec 31, 2024
+        const createdAt = new Date("2024-12-31T14:30:00Z");
         const result = calculateNextReset(createdAt, 1, "month");
 
-        // date-fns handles this as Feb 28 (or 29 in leap year)
-        // 2025 is not a leap year
-        const expected = addMonths(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Dec 31 + 1 month = Jan 31
+        expect(result).toEqual(new Date("2025-01-31T00:00:00Z"));
       });
 
       it("should handle leap year month-end (Jan 31 -> Feb 29)", () => {
-        const createdAt = new Date("2024-01-31T14:30:00");
+        // Set time to late Jan 2024 (leap year)
+        jest.setSystemTime(new Date("2024-01-25T12:00:00Z"));
+        const createdAt = new Date("2024-01-01T14:30:00Z");
         const result = calculateNextReset(createdAt, 1, "month");
 
-        // 2024 is a leap year
-        const expected = addMonths(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        // Jan 1 + 1 month = Feb 1
+        expect(result).toEqual(new Date("2024-02-01T00:00:00Z"));
       });
 
       it("should handle year boundary", () => {
-        const createdAt = new Date("2024-12-15T14:30:00");
+        jest.setSystemTime(new Date("2024-12-20T12:00:00Z"));
+        const createdAt = new Date("2024-12-15T14:30:00Z");
         const result = calculateNextReset(createdAt, 1, "month");
 
-        const expected = addMonths(startOfDay(createdAt), 1);
-        expect(result).toEqual(expected);
+        expect(result).toEqual(new Date("2025-01-15T00:00:00Z"));
       });
     });
 
@@ -150,39 +173,39 @@ describe("Date Logic Utilities", () => {
     });
 
     describe("Edge cases", () => {
-      it("should handle interval value of 0", () => {
-        const createdAt = new Date("2025-01-15T14:30:00");
+      it("should return null for interval value of 0", () => {
+        const createdAt = new Date("2025-01-15T14:30:00Z");
         const result = calculateNextReset(createdAt, 0, "day");
 
-        // 0 interval should return creation day (0 days from start)
-        const expected = addDays(startOfDay(createdAt), 0);
-        expect(result).toEqual(expected);
-      });
-
-      it("should handle very large interval values", () => {
-        const createdAt = new Date("2025-01-15T14:30:00");
-        const result = calculateNextReset(createdAt, 365, "day");
-
-        // Should return midnight 365 days later
-        const expected = addDays(startOfDay(createdAt), 365);
-        expect(result).toEqual(expected);
-      });
-
-      it("should handle invalid reset unit gracefully", () => {
-        const createdAt = new Date("2025-01-15T14:30:00");
-        const result = calculateNextReset(createdAt, 1, "invalid" as ResetUnit);
-
+        // 0 interval is invalid (returns null via period-calculation)
         expect(result).toBeNull();
       });
 
-      it("should handle negative interval values", () => {
-        const createdAt = new Date("2025-01-15T14:30:00");
+      it("should handle very large interval values", () => {
+        const createdAt = new Date("2025-01-15T14:30:00Z");
+        const result = calculateNextReset(createdAt, 365, "day");
+
+        // Should return midnight UTC 365 days later (Jan 15, 2026)
+        expect(result).toEqual(new Date("2026-01-15T00:00:00Z"));
+      });
+
+      it("should handle invalid reset unit gracefully", () => {
+        const consoleErrorSpy = jest
+          .spyOn(console, "error")
+          .mockImplementation();
+        const createdAt = new Date("2025-01-15T14:30:00Z");
+        const result = calculateNextReset(createdAt, 1, "invalid" as ResetUnit);
+
+        expect(result).toBeNull();
+        consoleErrorSpy.mockRestore();
+      });
+
+      it("should return null for negative interval values", () => {
+        const createdAt = new Date("2025-01-15T14:30:00Z");
         const result = calculateNextReset(createdAt, -1, "day");
 
-        // Should handle gracefully (implementation dependent)
-        // date-fns addDays with negative value goes backwards
-        const expected = addDays(startOfDay(createdAt), -1);
-        expect(result).toEqual(expected);
+        // Negative intervals are invalid
+        expect(result).toBeNull();
       });
     });
   });

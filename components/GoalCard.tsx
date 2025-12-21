@@ -2,18 +2,24 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, TouchableOpacity, View } from "react-native";
 import { useGoalActions } from "../hooks/useGoalActions";
 import { useGoalTotal } from "../hooks/useGoalTotal";
+import type { Goal } from "../types/domain";
 import { calculateNextReset, getCountdownText } from "../utils/date-logic";
 
-export function GoalCard({ goal }: { goal: any }) {
+export function GoalCard({ goal }: { goal: Goal }) {
   const router = useRouter();
   const { addEntry } = useGoalActions();
   const currentTotal = useGoalTotal(goal);
 
   // 1. Logic for countdown and reset
+  // Handle nullable fields with sensible defaults
+  const createdAt = goal.createdAt ?? new Date();
+  const resetValue = goal.resetValue ?? 1;
+  const resetUnit = goal.resetUnit ?? "day";
+
   const nextReset = calculateNextReset(
-    new Date(goal.createdAt),
-    goal.resetValue,
-    goal.resetUnit
+    new Date(createdAt),
+    resetValue,
+    resetUnit
   );
   const countdown = getCountdownText(nextReset);
 

@@ -189,7 +189,7 @@ describe("useThemeColor Hook", () => {
 
       // Switch to dark mode
       (useColorScheme.useColorScheme as jest.Mock).mockReturnValue("dark");
-      rerender();
+      rerender(undefined);
 
       expect(result.current).toBe("#FFFFFF");
     });
@@ -205,7 +205,7 @@ describe("useThemeColor Hook", () => {
 
       // Switch to light mode
       (useColorScheme.useColorScheme as jest.Mock).mockReturnValue("light");
-      rerender();
+      rerender(undefined);
 
       expect(result.current).toBe("#FFFFFF");
     });
@@ -221,7 +221,7 @@ describe("useThemeColor Hook", () => {
 
       // Switch to dark mode
       (useColorScheme.useColorScheme as jest.Mock).mockReturnValue("dark");
-      rerender();
+      rerender(undefined);
 
       expect(result.current).toBe("#CUSTOM2");
     });

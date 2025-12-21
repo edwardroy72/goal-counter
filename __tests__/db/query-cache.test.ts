@@ -114,6 +114,11 @@ describe("QueryCache", () => {
     });
 
     it("should handle listeners that throw errors gracefully", () => {
+      // Suppress console.error for this test since we're testing error handling
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       const goodListener = jest.fn();
       const badListener = jest.fn(() => {
         throw new Error("Listener error");
@@ -131,6 +136,8 @@ describe("QueryCache", () => {
       expect(goodListener).toHaveBeenCalledTimes(1);
       expect(badListener).toHaveBeenCalledTimes(1);
       expect(anotherGoodListener).toHaveBeenCalledTimes(1);
+
+      consoleErrorSpy.mockRestore();
     });
   });
 

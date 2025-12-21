@@ -1,15 +1,17 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { GoalCard } from "../components/GoalCard";
 import { db } from "../db/client";
 import { queryCache } from "../db/query-cache";
 import { goals } from "../db/schema";
+import type { Goal } from "../types/domain";
 
 export default function Dashboard() {
   const router = useRouter();
-  const [allGoals, setAllGoals] = useState<any[]>([]);
+  const [allGoals, setAllGoals] = useState<Goal[]>([]);
+  const hasMounted = useRef(false);
 
   // Manual fetch function
   const fetchGoals = useCallback(async () => {
@@ -24,9 +26,10 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch on mount
   useEffect(() => {
     console.log("[Dashboard] Initial fetch");
+    hasMounted.current = true;
     fetchGoals();
   }, [fetchGoals]);
 
@@ -43,9 +46,11 @@ export default function Dashboard() {
     };
   }, [fetchGoals]);
 
-  // Force re-fetch when screen gains focus
+  // Re-fetch when returning to screen (but not on initial mount)
   useFocusEffect(
     useCallback(() => {
+      // Skip initial mount - useEffect already handles that
+      if (!hasMounted.current) return;
       console.log("[Dashboard] Screen focused, refetching goals");
       fetchGoals();
     }, [fetchGoals])

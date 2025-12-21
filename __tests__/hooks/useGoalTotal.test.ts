@@ -3,12 +3,16 @@
  *
  * Tests the hook responsible for calculating current period totals.
  * Critical for displaying accurate progress on dashboard and goal cards.
+ *
+ * NOTE: This file uses minimal mock goal objects. TypeScript checking
+ * is relaxed via casting since we're testing with mocked database.
  */
 
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { db } from "../../db/client";
 import { queryCache } from "../../db/query-cache";
 import { useGoalTotal } from "../../hooks/useGoalTotal";
+import type { Goal } from "../../types/domain";
 
 // Mock database
 jest.mock("../../db/client", () => ({
@@ -48,7 +52,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(100);
@@ -74,7 +78,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(0);
@@ -96,7 +100,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(0);
@@ -123,7 +127,7 @@ describe("useGoalTotal Hook", () => {
       const mockUnsubscribe = jest.fn();
       (queryCache.subscribe as jest.Mock).mockReturnValue(mockUnsubscribe);
 
-      const { unmount } = renderHook(() => useGoalTotal(mockGoal));
+      const { unmount } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(queryCache.subscribe).toHaveBeenCalled();
@@ -160,7 +164,7 @@ describe("useGoalTotal Hook", () => {
         return jest.fn();
       });
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(50);
@@ -195,7 +199,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      renderHook(() => useGoalTotal(mockGoal));
+      renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(mockSelect.where).toHaveBeenCalled();
@@ -213,16 +217,19 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { rerender } = renderHook(({ goal }) => useGoalTotal(goal), {
-        initialProps: {
-          goal: {
-            id: "goal-1",
-            createdAt: new Date("2025-01-01T00:00:00Z"),
-            resetValue: 1,
-            resetUnit: "day",
+      const { rerender } = renderHook(
+        ({ goal }: { goal: any }) => useGoalTotal(goal),
+        {
+          initialProps: {
+            goal: {
+              id: "goal-1",
+              createdAt: new Date("2025-01-01T00:00:00Z"),
+              resetValue: 1,
+              resetUnit: "day",
+            },
           },
-        },
-      });
+        }
+      );
 
       await waitFor(() => {
         expect(db.select).toHaveBeenCalledTimes(1);
@@ -258,7 +265,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(500);
@@ -282,7 +289,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(100);
@@ -304,7 +311,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(100);
@@ -326,7 +333,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(100);
@@ -354,7 +361,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(0);
@@ -383,7 +390,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         // Should convert NaN to 0
@@ -408,7 +415,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(123.45);
@@ -430,7 +437,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(999999.99);
@@ -452,7 +459,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(0);
@@ -476,7 +483,9 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() =>
+        useGoalTotal(mockGoal as unknown as Goal)
+      );
 
       await waitFor(() => {
         expect(result.current).toBe(100);
@@ -498,7 +507,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(200);
@@ -520,7 +529,7 @@ describe("useGoalTotal Hook", () => {
 
       (db.select as jest.Mock).mockReturnValue(mockSelect);
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(300);
@@ -551,7 +560,7 @@ describe("useGoalTotal Hook", () => {
         return mockUnsubscribe;
       });
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(50);
@@ -613,7 +622,7 @@ describe("useGoalTotal Hook", () => {
         return jest.fn();
       });
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       await waitFor(() => {
         expect(result.current).toBe(10);
@@ -659,7 +668,7 @@ describe("useGoalTotal Hook", () => {
         return jest.fn();
       });
 
-      const { result } = renderHook(() => useGoalTotal(mockGoal));
+      const { result } = renderHook(() => useGoalTotal(mockGoal as Goal));
 
       // Should handle both initial fetch and immediate invalidation
       await waitFor(() => {
