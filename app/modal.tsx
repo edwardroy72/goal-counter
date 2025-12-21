@@ -19,7 +19,7 @@ const RESET_UNIT_OPTIONS: { value: ResetUnitType; label: string }[] = [
   { value: "day", label: "Day(s)" },
   { value: "week", label: "Week(s)" },
   { value: "month", label: "Month(s)" },
-  { value: "none", label: "Never (Lifetime)" },
+  { value: "none", label: "Never" },
 ];
 
 export default function CreateGoal() {
