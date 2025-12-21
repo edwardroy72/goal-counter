@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1766325093284" clover="3.2.0">
+  <project timestamp="1766325093284" name="All files">
+    <metrics statements="120" coveredstatements="119" conditionals="49" coveredconditionals="47" methods="24" coveredmethods="24" elements="193" coveredelements="190" complexity="0" loc="120" ncloc="120" packages="3" files="6" classes="6"/>
+    <package name="db">
+      <metrics statements="15" coveredstatements="15" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="6"/>
+      <file name="query-cache.ts" path="/home/edward/Desktop/dev/goal-counter/db/query-cache.ts">
+        <metrics statements="15" coveredstatements="15" conditionals="0" coveredconditionals="0" methods="6" coveredmethods="6"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="22" count="24" type="stmt"/>
+        <line num="25" count="24" type="stmt"/>
+        <line num="26" count="11" type="stmt"/>
+        <line num="34" count="11" type="stmt"/>
+        <line num="39" count="11" type="stmt"/>
+        <line num="40" count="11" type="stmt"/>
+        <line num="41" count="20" type="stmt"/>
+        <line num="42" count="20" type="stmt"/>
+        <line num="43" count="20" type="stmt"/>
+        <line num="45" count="1" type="stmt"/>
+        <line num="49" count="11" type="stmt"/>
+        <line num="56" count="15" type="stmt"/>
+        <line num="63" count="12" type="stmt"/>
+        <line num="68" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="hooks">
+      <metrics statements="82" coveredstatements="81" conditionals="33" coveredconditionals="31" methods="16" coveredmethods="16"/>
+      <file name="use-color-scheme.web.ts" path="/home/edward/Desktop/dev/goal-counter/hooks/use-color-scheme.web.ts">
+        <metrics statements="7" coveredstatements="7" conditionals="2" coveredconditionals="2" methods="2" coveredmethods="2"/>
+        <line num="8" count="54" type="stmt"/>
+        <line num="10" count="54" type="stmt"/>
+        <line num="11" count="21" type="stmt"/>
+        <line num="14" count="54" type="stmt"/>
+        <line num="16" count="54" type="cond" truecount="2" falsecount="0"/>
+        <line num="17" count="33" type="stmt"/>
+        <line num="20" count="21" type="stmt"/>
+      </file>
+      <file name="use-theme-color.ts" path="/home/edward/Desktop/dev/goal-counter/hooks/use-theme-color.ts">
+        <metrics statements="5" coveredstatements="5" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
+        <line num="13" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="14" count="24" type="stmt"/>
+        <line num="16" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="17" count="6" type="stmt"/>
+        <line num="19" count="18" type="stmt"/>
+      </file>
+      <file name="useGoalActions.ts" path="/home/edward/Desktop/dev/goal-counter/hooks/useGoalActions.ts">
+        <metrics statements="26" coveredstatements="26" conditionals="7" coveredconditionals="6" methods="4" coveredmethods="4"/>
+        <line num="9" count="41" type="stmt"/>
+        <line num="10" count="41" type="stmt"/>
+        <line num="16" count="41" type="stmt"/>
+        <line num="21" count="17" type="stmt"/>
+        <line num="23" count="17" type="stmt"/>
+        <line num="25" count="17" type="stmt"/>
+        <line num="27" count="17" type="stmt"/>
+        <line num="38" count="16" type="stmt"/>
+        <line num="41" count="16" type="stmt"/>
+        <line num="42" count="16" type="stmt"/>
+        <line num="43" count="16" type="stmt"/>
+        <line num="45" count="16" type="stmt"/>
+        <line num="48" count="16" type="cond" truecount="2" falsecount="0"/>
+        <line num="50" count="16" type="stmt"/>
+        <line num="51" count="3" type="stmt"/>
+        <line num="54" count="1" type="stmt"/>
+        <line num="61" count="41" type="stmt"/>
+        <line num="62" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="64" count="6" type="stmt"/>
+        <line num="65" count="6" type="stmt"/>
+        <line num="68" count="5" type="stmt"/>
+        <line num="70" count="5" type="stmt"/>
+        <line num="72" count="5" type="cond" truecount="1" falsecount="1"/>
+        <line num="75" count="5" type="stmt"/>
+        <line num="77" count="1" type="stmt"/>
+        <line num="81" count="41" type="stmt"/>
+      </file>
+      <file name="useGoalTotal.ts" path="/home/edward/Desktop/dev/goal-counter/hooks/useGoalTotal.ts">
+        <metrics statements="44" coveredstatements="43" conditionals="20" coveredconditionals="19" methods="9" coveredmethods="9"/>
+        <line num="17" count="20" type="stmt"/>
+        <line num="19" count="20" type="cond" truecount="4" falsecount="0"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="23" count="19" type="stmt"/>
+        <line num="25" count="19" type="stmt"/>
+        <line num="27" count="6542" type="cond" truecount="2" falsecount="0"/>
+        <line num="28" count="6428" type="stmt"/>
+        <line num="29" count="114" type="cond" truecount="2" falsecount="0"/>
+        <line num="30" count="102" type="stmt"/>
+        <line num="31" count="12" type="cond" truecount="1" falsecount="1"/>
+        <line num="32" count="12" type="stmt"/>
+        <line num="33" count="0" type="stmt"/>
+        <line num="35" count="6542" type="cond" truecount="2" falsecount="0"/>
+        <line num="36" count="6523" type="stmt"/>
+        <line num="39" count="19" type="stmt"/>
+        <line num="43" count="36" type="stmt"/>
+        <line num="44" count="36" type="stmt"/>
+        <line num="47" count="36" type="stmt"/>
+        <line num="48" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="49" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="53" count="36" type="stmt"/>
+        <line num="54" count="20" type="stmt"/>
+        <line num="55" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="59" count="36" type="stmt"/>
+        <line num="60" count="21" type="stmt"/>
+        <line num="61" count="21" type="stmt"/>
+        <line num="63" count="21" type="stmt"/>
+        <line num="70" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="71" count="20" type="stmt"/>
+        <line num="73" count="20" type="stmt"/>
+        <line num="75" count="1" type="stmt"/>
+        <line num="76" count="1" type="stmt"/>
+        <line num="81" count="36" type="stmt"/>
+        <line num="82" count="20" type="stmt"/>
+        <line num="83" count="20" type="stmt"/>
+        <line num="87" count="36" type="stmt"/>
+        <line num="88" count="20" type="stmt"/>
+        <line num="89" count="20" type="stmt"/>
+        <line num="90" count="1" type="stmt"/>
+        <line num="91" count="1" type="stmt"/>
+        <line num="93" count="20" type="stmt"/>
+        <line num="94" count="20" type="stmt"/>
+        <line num="95" count="20" type="stmt"/>
+        <line num="99" count="36" type="stmt"/>
+      </file>
+    </package>
+    <package name="utils">
+      <metrics statements="23" coveredstatements="23" conditionals="16" coveredconditionals="16" methods="2" coveredmethods="2"/>
+      <file name="date-logic.ts" path="/home/edward/Desktop/dev/goal-counter/utils/date-logic.ts">
+        <metrics statements="23" coveredstatements="23" conditionals="16" coveredconditionals="16" methods="2" coveredmethods="2"/>
+        <line num="15" count="1" type="stmt"/>
+        <line num="20" count="19" type="cond" truecount="4" falsecount="0"/>
+        <line num="23" count="16" type="stmt"/>
+        <line num="26" count="16" type="cond" truecount="4" falsecount="0"/>
+        <line num="28" count="7" type="stmt"/>
+        <line num="29" count="7" type="stmt"/>
+        <line num="31" count="3" type="stmt"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="34" count="5" type="stmt"/>
+        <line num="35" count="5" type="stmt"/>
+        <line num="37" count="1" type="stmt"/>
+        <line num="41" count="15" type="stmt"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="48" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="50" count="18" type="stmt"/>
+        <line num="51" count="18" type="stmt"/>
+        <line num="53" count="18" type="cond" truecount="2" falsecount="0"/>
+        <line num="55" count="16" type="stmt"/>
+        <line num="56" count="16" type="stmt"/>
+        <line num="57" count="16" type="stmt"/>
+        <line num="59" count="16" type="cond" truecount="2" falsecount="0"/>
+        <line num="60" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="61" count="5" type="stmt"/>
+      </file>
+    </package>
+  </project>
+</coverage>
