@@ -48,7 +48,7 @@ export function useGoalTotal(goal: Goal): number {
   const fetchTotal = useCallback(async () => {
     try {
       if (process.env.NODE_ENV !== 'test') {
-        console.log("[useGoalTotal] Fetching total for goal:", goal.id);
+        console.log("[useGoalTotal] Fetching for goal:", goal.id.substring(0, 8));
         console.log("[useGoalTotal] Period start:", periodStart.toISOString());
       }
       

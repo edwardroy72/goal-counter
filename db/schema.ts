@@ -42,8 +42,10 @@ export const goals = sqliteTable("goals", {
     .$type<(typeof GoalStatus)[keyof typeof GoalStatus]>()
     .default("active"),
   timezone: text("timezone").default("UTC"), // For "Source of Truth" logic
-  // Store milliseconds since epoch to align with entries.timestamp
-  createdAt: integer("created_at", { mode: "timestamp" }).default(
+  // IMPORTANT: Existing data stores milliseconds (from `strftime('%s', 'now') * 1000`).
+  // Use mode: "timestamp_ms" to correctly interpret milliseconds as Date objects.
+  // New goals will also store milliseconds via the SQL default.
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
     sql`(strftime('%s', 'now') * 1000)`
   ),
 });
@@ -57,7 +59,7 @@ export const entries = sqliteTable("entries", {
     .references(() => goals.id, { onDelete: "cascade" }),
   amount: real("amount").notNull(),
   note: text("note"),
-  // Timestamp is UTC, displayed locally via frontend logic
+  // Timestamp is stored as seconds - Drizzle mode: "timestamp" expects seconds
   timestamp: integer("timestamp", { mode: "timestamp" }).notNull(),
 });
 
