@@ -17,8 +17,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import type { NormalizedEntry } from "../../hooks/useGoalEntries";
 import { useEntryActions } from "../../hooks/useEntryActions";
+import type { NormalizedEntry } from "../../hooks/useGoalEntries";
 
 interface EntryEditModalProps {
   visible: boolean;
@@ -48,7 +48,9 @@ export function EntryEditModal({
   // Show error alert
   useEffect(() => {
     if (error) {
-      Alert.alert("Error", error.message, [{ text: "OK", onPress: clearError }]);
+      Alert.alert("Error", error.message, [
+        { text: "OK", onPress: clearError },
+      ]);
     }
   }, [error, clearError]);
 

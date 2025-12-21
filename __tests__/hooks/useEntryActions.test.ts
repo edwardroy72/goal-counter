@@ -10,7 +10,7 @@
  * - Haptic feedback
  */
 
-import { renderHook, act, waitFor } from "@testing-library/react-native";
+import { act, renderHook } from "@testing-library/react-native";
 import { useEntryActions } from "../../hooks/useEntryActions";
 
 // Mock dependencies
@@ -53,8 +53,8 @@ jest.mock("expo-haptics", () => ({
   },
 }));
 
-import { queryCache } from "../../db/query-cache";
 import * as Haptics from "expo-haptics";
+import { queryCache } from "../../db/query-cache";
 
 describe("useEntryActions", () => {
   beforeEach(() => {

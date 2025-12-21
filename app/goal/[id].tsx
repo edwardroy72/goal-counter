@@ -22,7 +22,10 @@ import {
 } from "../../components/goal-detail";
 import { useEntryActions } from "../../hooks/useEntryActions";
 import { useGoalById } from "../../hooks/useGoalById";
-import { useGoalEntries, type NormalizedEntry } from "../../hooks/useGoalEntries";
+import {
+  useGoalEntries,
+  type NormalizedEntry,
+} from "../../hooks/useGoalEntries";
 import { useGoalTotal } from "../../hooks/useGoalTotal";
 
 export default function GoalDetail() {
@@ -30,7 +33,11 @@ export default function GoalDetail() {
   const goalId = typeof id === "string" ? id : "";
 
   // Data fetching hooks
-  const { goal, isLoading: isLoadingGoal, error: goalError } = useGoalById(goalId);
+  const {
+    goal,
+    isLoading: isLoadingGoal,
+    error: goalError,
+  } = useGoalById(goalId);
   const currentTotal = useGoalTotal(goal ?? createPlaceholderGoal(goalId));
   const {
     groupedByDay,
@@ -41,7 +48,9 @@ export default function GoalDetail() {
 
   // UI state
   const [activeTab, setActiveTab] = useState<TabId>("current");
-  const [editingEntry, setEditingEntry] = useState<NormalizedEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<NormalizedEntry | null>(
+    null
+  );
   const [showManualAdd, setShowManualAdd] = useState(false);
 
   // Entry actions
@@ -178,4 +187,3 @@ function createPlaceholderGoal(id: string) {
     createdAt: new Date(),
   };
 }
-

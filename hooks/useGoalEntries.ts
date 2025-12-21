@@ -49,7 +49,11 @@ function formatDateForDisplay(date: Date): string {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dateOnly = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
 
   if (dateOnly.getTime() === today.getTime()) {
     return "Today";

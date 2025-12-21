@@ -69,7 +69,10 @@ export function LedgerView({
             {section.title}
           </Text>
           <Text className="text-zinc-400 dark:text-zinc-500 text-xs">
-            Total: {section.dayTotal.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            Total:{" "}
+            {section.dayTotal.toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
             {unit && ` ${unit}`}
           </Text>
         </View>

@@ -29,7 +29,11 @@ interface ManualAddModalProps {
   onClose: () => void;
 }
 
-export function ManualAddModal({ visible, goal, onClose }: ManualAddModalProps) {
+export function ManualAddModal({
+  visible,
+  goal,
+  onClose,
+}: ManualAddModalProps) {
   const [step, setStep] = useState<Step>("amount");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");

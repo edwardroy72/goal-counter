@@ -27,10 +27,7 @@ export function GoalDetailHeader({ title, unit }: GoalDetailHeaderProps) {
         <ChevronLeft color="#a1a1aa" size={24} />
       </TouchableOpacity>
       <View className="flex-1">
-        <Text
-          className="text-2xl font-bold dark:text-white"
-          numberOfLines={1}
-        >
+        <Text className="text-2xl font-bold dark:text-white" numberOfLines={1}>
           {title}
         </Text>
         {unit && (

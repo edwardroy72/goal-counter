@@ -87,10 +87,7 @@ export function useEntryActions(): UseEntryActionsResult {
           return true;
         }
 
-        await db
-          .update(entries)
-          .set(updateData)
-          .where(eq(entries.id, entryId));
+        await db.update(entries).set(updateData).where(eq(entries.id, entryId));
 
         // Invalidate cache to trigger refetch
         queryCache.invalidate();
