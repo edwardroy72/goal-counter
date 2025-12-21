@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { Plus, Settings } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { GoalCard } from "../components/GoalCard";
@@ -58,8 +58,15 @@ export default function Dashboard() {
 
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-zinc-950 px-4 pt-20">
-      <View className="mb-8 px-2">
+      <View className="mb-8 px-2 flex-row justify-between items-center">
         <Text className="text-4xl font-black dark:text-white">Goals</Text>
+        <TouchableOpacity
+          onPress={() => router.push("/settings")}
+          className="p-2"
+          accessibilityLabel="Settings"
+        >
+          <Settings color="#71717a" size={24} />
+        </TouchableOpacity>
       </View>
 
       <FlatList

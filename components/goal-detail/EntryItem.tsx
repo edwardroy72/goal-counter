@@ -2,10 +2,11 @@
  * EntryItem Component
  *
  * Displays a single entry with time, amount, and optional note.
- * Supports swipe/press actions for edit and delete.
+ * Supports two-tap delete: first tap shows confirmation, second tap deletes.
  */
 
-import { Pencil, Trash2 } from "lucide-react-native";
+import { Check, Pencil, Trash2 } from "lucide-react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { NormalizedEntry } from "../../hooks/useGoalEntries";
 
@@ -28,6 +29,37 @@ function formatTime(date: Date): string {
 }
 
 export function EntryItem({ entry, unit, onEdit, onDelete }: EntryItemProps) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset confirmation state after 3 seconds
+  useEffect(() => {
+    if (confirmingDelete) {
+      timeoutRef.current = setTimeout(() => {
+        setConfirmingDelete(false);
+      }, 3000);
+    }
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [confirmingDelete]);
+
+  const handleDeletePress = useCallback(() => {
+    if (confirmingDelete) {
+      // Second tap - perform delete
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      setConfirmingDelete(false);
+      onDelete(entry);
+    } else {
+      // First tap - show confirmation
+      setConfirmingDelete(true);
+    }
+  }, [confirmingDelete, entry, onDelete]);
+
   return (
     <View className="flex-row items-center py-3 px-4 bg-white dark:bg-zinc-900 rounded-xl mb-2 border border-zinc-100 dark:border-zinc-800">
       {/* Time */}
@@ -65,12 +97,18 @@ export function EntryItem({ entry, unit, onEdit, onDelete }: EntryItemProps) {
           <Pencil size={18} color="#71717a" />
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => onDelete(entry)}
-          accessibilityLabel="Delete entry"
+          onPress={handleDeletePress}
+          accessibilityLabel={
+            confirmingDelete ? "Confirm delete" : "Delete entry"
+          }
           accessibilityRole="button"
-          className="p-2"
+          className={`p-2 rounded-lg ${confirmingDelete ? "bg-red-500" : ""}`}
         >
-          <Trash2 size={18} color="#ef4444" />
+          {confirmingDelete ? (
+            <Check size={18} color="#ffffff" />
+          ) : (
+            <Trash2 size={18} color="#ef4444" />
+          )}
         </TouchableOpacity>
       </View>
     </View>

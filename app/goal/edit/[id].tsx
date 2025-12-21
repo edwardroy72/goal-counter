@@ -1,7 +1,18 @@
-import { useRouter } from "expo-router";
+/**
+ * Edit Goal Screen
+ *
+ * Allows editing of goal properties:
+ * - Name, Target, Unit
+ * - Quick Add amounts (up to 4)
+ * - Reset interval configuration
+ */
+
+import { eq } from "drizzle-orm";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { X } from "lucide-react-native";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   Text,
@@ -9,9 +20,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { db } from "../db/client";
-import { queryCache } from "../db/query-cache";
-import { goals } from "../db/schema";
+import { db } from "../../../db/client";
+import { queryCache } from "../../../db/query-cache";
+import { goals } from "../../../db/schema";
+import { useGoalById } from "../../../hooks/useGoalById";
 
 type ResetUnitType = "day" | "week" | "month" | "none";
 
@@ -19,11 +31,15 @@ const RESET_UNIT_OPTIONS: { value: ResetUnitType; label: string }[] = [
   { value: "day", label: "Day(s)" },
   { value: "week", label: "Week(s)" },
   { value: "month", label: "Month(s)" },
-  { value: "none", label: "Never (Lifetime)" },
+  { value: "none", label: "Never" },
 ];
 
-export default function CreateGoal() {
+export default function EditGoal() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const goalId = typeof id === "string" ? id : "";
+
+  const { goal, isLoading, error } = useGoalById(goalId);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -31,12 +47,61 @@ export default function CreateGoal() {
   const [target, setTarget] = useState("");
   const [resetValue, setResetValue] = useState("1");
   const [resetUnit, setResetUnit] = useState<ResetUnitType>("day");
-
-  // Quick Add amounts (up to 4)
   const [quickAdd1, setQuickAdd1] = useState("1");
   const [quickAdd2, setQuickAdd2] = useState("");
   const [quickAdd3, setQuickAdd3] = useState("");
   const [quickAdd4, setQuickAdd4] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteCountdown, setDeleteCountdown] = useState(3);
+  const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deleteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Reset delete confirmation after 3 seconds with countdown
+  useEffect(() => {
+    if (confirmingDelete) {
+      setDeleteCountdown(3);
+
+      // Update countdown every second
+      deleteIntervalRef.current = setInterval(() => {
+        setDeleteCountdown((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Reset after 3 seconds
+      deleteTimeoutRef.current = setTimeout(() => {
+        setConfirmingDelete(false);
+        setDeleteCountdown(3);
+      }, 3000);
+    }
+    return () => {
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+      }
+      if (deleteIntervalRef.current) {
+        clearInterval(deleteIntervalRef.current);
+      }
+    };
+  }, [confirmingDelete]);
+
+  // Populate form when goal loads
+  useEffect(() => {
+    if (goal) {
+      setTitle(goal.title);
+      setUnit(goal.unit || "");
+      setTarget(goal.target !== null ? String(goal.target) : "");
+      setResetValue(String(goal.resetValue ?? 1));
+      setResetUnit((goal.resetUnit as ResetUnitType) ?? "day");
+      setQuickAdd1(String(goal.quickAdd1));
+      setQuickAdd2(goal.quickAdd2 !== null ? String(goal.quickAdd2) : "");
+      setQuickAdd3(goal.quickAdd3 !== null ? String(goal.quickAdd3) : "");
+      setQuickAdd4(goal.quickAdd4 !== null ? String(goal.quickAdd4) : "");
+    }
+  }, [goal]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -55,33 +120,81 @@ export default function CreateGoal() {
       return val && !isNaN(parsed) && parsed > 0 ? parsed : null;
     };
 
+    setIsSaving(true);
     try {
-      await db.insert(goals).values({
-        title: title.trim(),
-        unit: unit.trim() || null,
-        target: target ? parseFloat(target) : null,
-        resetValue: resetUnit === "none" ? 0 : parseInt(resetValue) || 1,
-        resetUnit: resetUnit,
-        quickAdd1: qa1,
-        quickAdd2: parseQuickAdd(quickAdd2),
-        quickAdd3: parseQuickAdd(quickAdd3),
-        quickAdd4: parseQuickAdd(quickAdd4),
-        sortOrder: Date.now(),
-        status: "active",
-      });
+      await db
+        .update(goals)
+        .set({
+          title: title.trim(),
+          unit: unit.trim() || null,
+          target: target ? parseFloat(target) : null,
+          resetValue: resetUnit === "none" ? 0 : parseInt(resetValue) || 1,
+          resetUnit: resetUnit,
+          quickAdd1: qa1,
+          quickAdd2: parseQuickAdd(quickAdd2),
+          quickAdd3: parseQuickAdd(quickAdd3),
+          quickAdd4: parseQuickAdd(quickAdd4),
+        })
+        .where(eq(goals.id, goalId));
 
       queryCache.invalidate();
       router.back();
     } catch (err) {
-      console.error("Save failed:", err);
-      Alert.alert("Error", "Failed to create goal. Please try again.");
+      console.error("Update failed:", err);
+      Alert.alert("Error", "Failed to update goal. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  const handleDelete = useCallback(async () => {
+    if (confirmingDelete) {
+      // Second tap - perform delete
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+      }
+      try {
+        await db.delete(goals).where(eq(goals.id, goalId));
+        queryCache.invalidate();
+        // Navigate back to dashboard
+        router.replace("/");
+      } catch (err) {
+        console.error("Delete failed:", err);
+        Alert.alert("Error", "Failed to delete goal.");
+        setConfirmingDelete(false);
+      }
+    } else {
+      // First tap - show confirmation
+      setConfirmingDelete(true);
+    }
+  }, [confirmingDelete, goalId, router]);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-zinc-900 items-center justify-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
+
+  if (error || !goal) {
+    return (
+      <View className="flex-1 bg-zinc-900 pt-20 px-6">
+        <Text className="text-red-500 text-center text-lg">Goal not found</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="mt-6 self-center"
+        >
+          <Text className="text-blue-500 font-bold">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView className="flex-1 bg-zinc-900 p-6 pt-20">
       <View className="flex-row justify-between items-center mb-10">
-        <Text className="text-3xl font-bold text-white">New Goal</Text>
+        <Text className="text-3xl font-bold text-white">Edit Goal</Text>
         <TouchableOpacity
           onPress={() => router.back()}
           className="bg-zinc-800 p-2 rounded-full"
@@ -217,13 +330,34 @@ export default function CreateGoal() {
         </Text>
       </View>
 
+      {/* Save Button */}
       <TouchableOpacity
         onPress={handleSave}
+        disabled={isSaving}
         activeOpacity={0.8}
-        className="bg-blue-600 p-5 rounded-3xl mt-6 shadow-lg shadow-blue-900/20"
+        className={`p-5 rounded-3xl mt-6 shadow-lg ${
+          isSaving ? "bg-blue-800" : "bg-blue-600"
+        }`}
       >
         <Text className="text-white text-center font-bold text-lg">
-          Create Goal
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Delete Button */}
+      <TouchableOpacity
+        onPress={handleDelete}
+        activeOpacity={0.8}
+        className={`p-5 rounded-3xl mt-4 ${
+          confirmingDelete
+            ? "bg-red-500"
+            : "bg-red-500/70 border border-red-500/30"
+        }`}
+      >
+        <Text className={`text-center font-bold text-lg text-white`}>
+          {confirmingDelete
+            ? `Tap Again to Confirm Delete (${deleteCountdown})`
+            : "Delete Goal"}
         </Text>
       </TouchableOpacity>
 

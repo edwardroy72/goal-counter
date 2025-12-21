@@ -135,7 +135,7 @@ export function EntryEditModal({
             <TextInput
               value={note}
               onChangeText={setNote}
-              placeholder="Add a note..."
+              placeholder="What was this for?"
               placeholderTextColor="#52525b"
               multiline
               numberOfLines={3}

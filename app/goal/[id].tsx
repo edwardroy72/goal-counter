@@ -9,23 +9,24 @@
 
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import {
   CurrentPeriodView,
   EntryEditModal,
   GoalDetailHeader,
   GoalSummaryCard,
-  LedgerView,
   ManualAddModal,
   TabBar,
   type TabId,
 } from "../../components/goal-detail";
+import { HistoryLedgerView } from "../../components/goal-detail/HistoryLedgerView";
 import { useEntryActions } from "../../hooks/useEntryActions";
 import { useGoalById } from "../../hooks/useGoalById";
 import {
   useGoalEntries,
   type NormalizedEntry,
 } from "../../hooks/useGoalEntries";
+import { useGoalHistory } from "../../hooks/useGoalHistory";
 import { useGoalTotal } from "../../hooks/useGoalTotal";
 
 export default function GoalDetail() {
@@ -44,6 +45,7 @@ export default function GoalDetail() {
     isLoading: isLoadingEntries,
     periodStart,
   } = useGoalEntries(goal);
+  const { periods, isLoading: isLoadingHistory } = useGoalHistory(goal);
   const { deleteEntry } = useEntryActions();
 
   // UI state
@@ -58,22 +60,10 @@ export default function GoalDetail() {
     setEditingEntry(entry);
   }, []);
 
+  // Two-tap delete is now handled by EntryItem component
   const handleDeleteEntry = useCallback(
-    (entry: NormalizedEntry) => {
-      Alert.alert(
-        "Delete Entry",
-        `Are you sure you want to delete this entry of ${entry.amount}?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              await deleteEntry(entry.id);
-            },
-          },
-        ]
-      );
+    async (entry: NormalizedEntry) => {
+      await deleteEntry(entry.id);
     },
     [deleteEntry]
   );
@@ -117,7 +107,7 @@ export default function GoalDetail() {
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-zinc-950 pt-20 px-4">
       {/* Header */}
-      <GoalDetailHeader title={goal.title} unit={goal.unit} />
+      <GoalDetailHeader title={goal.title} unit={goal.unit} goalId={goal.id} />
 
       {/* Summary Card */}
       <GoalSummaryCard
@@ -140,10 +130,10 @@ export default function GoalDetail() {
           onDeleteEntry={handleDeleteEntry}
         />
       ) : (
-        <LedgerView
-          groupedEntries={groupedByDay}
+        <HistoryLedgerView
+          periods={periods}
           unit={goal.unit}
-          isLoading={isLoadingEntries}
+          isLoading={isLoadingHistory}
           onEditEntry={handleEditEntry}
           onDeleteEntry={handleDeleteEntry}
         />

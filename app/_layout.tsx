@@ -3,6 +3,8 @@ import * as Crypto from "expo-crypto";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { SettingsProvider } from "../contexts/SettingsContext";
+import { ToastProvider } from "../contexts/ToastContext";
 import { db } from "../db/client";
 import migrations from "../drizzle/migrations";
 import "../global.css"; // Ensure NativeWind styles load
@@ -37,16 +39,25 @@ export default function RootLayout() {
 
   // 3. Render the app stack once the DB is ready
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: "transparent" },
-      }}
-    >
-      <Stack.Screen name="index" />
-      {/* presentation: 'modal' makes the Create Goal screen slide up from bottom */}
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      <Stack.Screen name="goal/[id]" />
-    </Stack>
+    <SettingsProvider>
+      <ToastProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        >
+          <Stack.Screen name="index" />
+          {/* presentation: 'modal' makes the Create Goal screen slide up from bottom */}
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          <Stack.Screen name="goal/[id]" />
+          <Stack.Screen
+            name="goal/edit/[id]"
+            options={{ presentation: "modal" }}
+          />
+          <Stack.Screen name="settings" options={{ presentation: "modal" }} />
+        </Stack>
+      </ToastProvider>
+    </SettingsProvider>
   );
 }

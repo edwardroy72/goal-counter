@@ -1,19 +1,24 @@
 /**
  * GoalDetailHeader Component
  *
- * Displays the header with back button and goal title.
+ * Displays the header with back button, goal title, and edit button.
  */
 
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, Pencil } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
 
 interface GoalDetailHeaderProps {
   title: string;
   unit?: string | null;
+  goalId?: string;
 }
 
-export function GoalDetailHeader({ title, unit }: GoalDetailHeaderProps) {
+export function GoalDetailHeader({
+  title,
+  unit,
+  goalId,
+}: GoalDetailHeaderProps) {
   const router = useRouter();
 
   return (
@@ -36,6 +41,16 @@ export function GoalDetailHeader({ title, unit }: GoalDetailHeaderProps) {
           </Text>
         )}
       </View>
+      {goalId && (
+        <TouchableOpacity
+          onPress={() => router.push(`/goal/edit/${goalId}`)}
+          accessibilityLabel="Edit goal"
+          accessibilityRole="button"
+          className="bg-zinc-200 dark:bg-zinc-800 p-2 rounded-full"
+        >
+          <Pencil color="#a1a1aa" size={20} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

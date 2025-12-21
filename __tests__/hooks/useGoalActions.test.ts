@@ -587,4 +587,248 @@ describe("useGoalActions Hook", () => {
       expect(result.current.showUndo).toBe(false);
     });
   });
+
+  describe("addEntry() return value", () => {
+    it("should return the entry ID for immediate use", async () => {
+      const mockEntry = {
+        id: "returned-entry-id",
+        goalId: "goal-1",
+        amount: 100,
+        note: null,
+      };
+      const mockInsert = {
+        values: jest.fn().mockReturnValue({
+          returning: jest.fn().mockResolvedValue([mockEntry]),
+        }),
+      };
+      (db.insert as jest.Mock).mockReturnValue(mockInsert);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      let returnedId: string | null = null;
+      await act(async () => {
+        returnedId = await result.current.addEntry("goal-1", 100);
+      });
+
+      expect(returnedId).toBe("returned-entry-id");
+    });
+
+    it("should return null on database error", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+      const mockInsert = {
+        values: jest.fn().mockReturnValue({
+          returning: jest.fn().mockRejectedValue(new Error("Database error")),
+        }),
+      };
+      (db.insert as jest.Mock).mockReturnValue(mockInsert);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      let returnedId: string | null = "not-null";
+      await act(async () => {
+        returnedId = await result.current.addEntry("goal-1", 100);
+      });
+
+      expect(returnedId).toBeNull();
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe("undoEntry() - undo by specific ID", () => {
+    it("should delete entry by specific ID", async () => {
+      const mockDelete = {
+        where: jest.fn().mockResolvedValue(undefined),
+      };
+      (db.delete as jest.Mock).mockReturnValue(mockDelete);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      await act(async () => {
+        await result.current.undoEntry("specific-entry-id");
+      });
+
+      expect(db.delete).toHaveBeenCalledWith(entries);
+      expect(mockDelete.where).toHaveBeenCalled();
+    });
+
+    it("should not delete anything if entryId is empty", async () => {
+      const { result } = renderHook(() => useGoalActions());
+
+      await act(async () => {
+        await result.current.undoEntry("");
+      });
+
+      expect(db.delete).not.toHaveBeenCalled();
+    });
+
+    it("should invalidate query cache after successful delete", async () => {
+      const mockDelete = {
+        where: jest.fn().mockResolvedValue(undefined),
+      };
+      (db.delete as jest.Mock).mockReturnValue(mockDelete);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      await act(async () => {
+        await result.current.undoEntry("test-id");
+      });
+
+      expect(queryCache.invalidate).toHaveBeenCalledTimes(1);
+    });
+
+    it("should trigger success haptic feedback", async () => {
+      const mockDelete = {
+        where: jest.fn().mockResolvedValue(undefined),
+      };
+      (db.delete as jest.Mock).mockReturnValue(mockDelete);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      await act(async () => {
+        await result.current.undoEntry("test-id");
+      });
+
+      expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+        Haptics.NotificationFeedbackType.Success
+      );
+    });
+
+    it("should clear lastEntryId if it matches the undone entry", async () => {
+      const mockEntry = {
+        id: "test-id",
+        goalId: "goal-1",
+        amount: 100,
+        note: null,
+      };
+      const mockInsert = {
+        values: jest.fn().mockReturnValue({
+          returning: jest.fn().mockResolvedValue([mockEntry]),
+        }),
+      };
+      (db.insert as jest.Mock).mockReturnValue(mockInsert);
+
+      const mockDelete = {
+        where: jest.fn().mockResolvedValue(undefined),
+      };
+      (db.delete as jest.Mock).mockReturnValue(mockDelete);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      // Add entry to set lastEntryId
+      await act(async () => {
+        await result.current.addEntry("goal-1", 100);
+      });
+
+      expect(result.current.showUndo).toBe(true);
+
+      // Undo using the specific ID
+      await act(async () => {
+        await result.current.undoEntry("test-id");
+      });
+
+      expect(result.current.showUndo).toBe(false);
+    });
+
+    it("should NOT clear lastEntryId if it does not match", async () => {
+      const mockEntry = {
+        id: "current-entry-id",
+        goalId: "goal-1",
+        amount: 100,
+        note: null,
+      };
+      const mockInsert = {
+        values: jest.fn().mockReturnValue({
+          returning: jest.fn().mockResolvedValue([mockEntry]),
+        }),
+      };
+      (db.insert as jest.Mock).mockReturnValue(mockInsert);
+
+      const mockDelete = {
+        where: jest.fn().mockResolvedValue(undefined),
+      };
+      (db.delete as jest.Mock).mockReturnValue(mockDelete);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      // Add entry to set lastEntryId
+      await act(async () => {
+        await result.current.addEntry("goal-1", 100);
+      });
+
+      expect(result.current.showUndo).toBe(true);
+
+      // Undo a DIFFERENT entry
+      await act(async () => {
+        await result.current.undoEntry("different-entry-id");
+      });
+
+      // showUndo should still be true because current entry is different
+      expect(result.current.showUndo).toBe(true);
+    });
+
+    it("should handle database errors gracefully", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+      const mockDelete = {
+        where: jest.fn().mockRejectedValue(new Error("Delete failed")),
+      };
+      (db.delete as jest.Mock).mockReturnValue(mockDelete);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      await act(async () => {
+        await result.current.undoEntry("test-id");
+      });
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Undo failed:",
+        expect.any(Error)
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe("Quick Add with immediate undo integration", () => {
+    it("should allow undo immediately after addEntry using returned ID", async () => {
+      const mockEntry = {
+        id: "quick-add-entry-id",
+        goalId: "goal-1",
+        amount: 5,
+        note: null,
+      };
+      const mockInsert = {
+        values: jest.fn().mockReturnValue({
+          returning: jest.fn().mockResolvedValue([mockEntry]),
+        }),
+      };
+      (db.insert as jest.Mock).mockReturnValue(mockInsert);
+
+      const mockDelete = {
+        where: jest.fn().mockResolvedValue(undefined),
+      };
+      (db.delete as jest.Mock).mockReturnValue(mockDelete);
+
+      const { result } = renderHook(() => useGoalActions());
+
+      // Simulate Quick Add: addEntry returns ID immediately
+      let entryId: string | null = null;
+      await act(async () => {
+        entryId = await result.current.addEntry("goal-1", 5);
+      });
+
+      expect(entryId).toBe("quick-add-entry-id");
+
+      // Immediately use returned ID to undo (simulating toast undo button)
+      await act(async () => {
+        await result.current.undoEntry(entryId!);
+      });
+
+      // Entry should be deleted
+      expect(db.delete).toHaveBeenCalledWith(entries);
+      expect(queryCache.invalidate).toHaveBeenCalled();
+    });
+  });
 });

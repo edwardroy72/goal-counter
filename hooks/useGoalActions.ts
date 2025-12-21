@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import * as Haptics from "expo-haptics";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { db } from "../db/client";
 import { queryCache } from "../db/query-cache";
 import { entries } from "../db/schema";
@@ -12,25 +12,26 @@ export function useGoalActions() {
   /**
    * Adds a numeric entry to a goal with an optional note.
    * Triggers haptic feedback and starts the 3s undo timer.
+   * Returns the created entry ID for immediate use in undo callbacks.
    */
   const addEntry = async (
     goalId: string,
     amount: number,
     note: string | null = null
-  ) => {
+  ): Promise<string | null> => {
     try {
       // Physical "click" feedback
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       const now = new Date();
       const nowMs = now.getTime();
-      
-      if (process.env.NODE_ENV !== 'test') {
+
+      if (process.env.NODE_ENV !== "test") {
         console.log("[addEntry] Inserting entry:", { goalId, amount, note });
         console.log("[addEntry] Timestamp (Date):", now.toISOString());
         console.log("[addEntry] Timestamp (ms):", nowMs);
       }
-      
+
       const [newEntry] = await db
         .insert(entries)
         .values({
@@ -42,7 +43,7 @@ export function useGoalActions() {
         })
         .returning();
 
-      if (process.env.NODE_ENV !== 'test') {
+      if (process.env.NODE_ENV !== "test") {
         console.log("[addEntry] Entry inserted:", {
           id: newEntry.id,
           goalId: newEntry.goalId,
@@ -53,12 +54,15 @@ export function useGoalActions() {
       }
 
       // Explicitly invalidate all queries after successful insert
-      if (process.env.NODE_ENV !== 'test') {
+      if (process.env.NODE_ENV !== "test") {
         console.log("[addEntry] Invalidating query cache...");
       }
       queryCache.invalidate();
-      if (process.env.NODE_ENV !== 'test') {
-        console.log("[addEntry] Query cache invalidated. Subscriber count:", queryCache.getSubscriberCount());
+      if (process.env.NODE_ENV !== "test") {
+        console.log(
+          "[addEntry] Query cache invalidated. Subscriber count:",
+          queryCache.getSubscriberCount()
+        );
       }
 
       setLastEntryId(newEntry.id);
@@ -69,8 +73,12 @@ export function useGoalActions() {
       undoTimeoutRef.current = setTimeout(() => {
         setLastEntryId(null);
       }, 3000);
+
+      // Return the entry ID for immediate use
+      return newEntry.id;
     } catch (err) {
       console.error("Failed to add entry:", err);
+      return null;
     }
   };
 
@@ -82,10 +90,10 @@ export function useGoalActions() {
 
     try {
       await db.delete(entries).where(eq(entries.id, lastEntryId));
-      
+
       // Explicitly invalidate all queries after successful delete
       queryCache.invalidate();
-      
+
       setLastEntryId(null);
 
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
@@ -97,5 +105,30 @@ export function useGoalActions() {
     }
   };
 
-  return { addEntry, undoLastEntry, showUndo: !!lastEntryId };
+  /**
+   * Deletes a specific entry by ID.
+   * Use this when you have the entry ID from addEntry's return value.
+   */
+  const undoEntry = useCallback(async (entryId: string) => {
+    if (!entryId) return;
+
+    try {
+      await db.delete(entries).where(eq(entries.id, entryId));
+
+      // Explicitly invalidate all queries after successful delete
+      queryCache.invalidate();
+
+      // Clear lastEntryId if it matches
+      setLastEntryId((current) => (current === entryId ? null : current));
+
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+
+      // Success haptic notification
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err) {
+      console.error("Undo failed:", err);
+    }
+  }, []);
+
+  return { addEntry, undoLastEntry, undoEntry, showUndo: !!lastEntryId };
 }

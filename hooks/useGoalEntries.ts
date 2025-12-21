@@ -3,16 +3,22 @@
  *
  * Fetches entries for a goal within the current period.
  * Groups entries by day for display in the ledger view.
+ * Uses timezone-aware calculations based on user settings.
  * Automatically refetches when data changes via cache invalidation.
  */
 
 import { and, desc, eq, gte } from "drizzle-orm";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSettings } from "../contexts/SettingsContext";
 import { db } from "../db/client";
 import { queryCache } from "../db/query-cache";
 import { entries } from "../db/schema";
 import type { Entry, Goal } from "../types/domain";
-import { calculatePeriodStart } from "../utils/period-calculation";
+import {
+  calculatePeriodStartInTimezone,
+  formatDisplayDateInTimezone,
+  getDateKeyInTimezone,
+} from "../utils/timezone-utils";
 
 /**
  * Entry with normalized timestamp for display
@@ -41,35 +47,6 @@ interface UseGoalEntriesResult {
 }
 
 /**
- * Formats a date for display in the ledger
- */
-function formatDateForDisplay(date: Date): string {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  const dateOnly = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  );
-
-  if (dateOnly.getTime() === today.getTime()) {
-    return "Today";
-  }
-  if (dateOnly.getTime() === yesterday.getTime()) {
-    return "Yesterday";
-  }
-
-  // Format as "Dec 20" for other dates
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-/**
  * Normalizes entry timestamp to Date object
  */
 function normalizeEntry(entry: Entry): NormalizedEntry {
@@ -83,13 +60,17 @@ function normalizeEntry(entry: Entry): NormalizedEntry {
 }
 
 /**
- * Groups entries by day
+ * Groups entries by day in the user's timezone
  */
-function groupEntriesByDay(entries: NormalizedEntry[]): DayGroup[] {
+function groupEntriesByDay(
+  entries: NormalizedEntry[],
+  timezone: string
+): DayGroup[] {
   const groups = new Map<string, NormalizedEntry[]>();
 
   for (const entry of entries) {
-    const dateKey = entry.timestamp.toISOString().split("T")[0];
+    // Use timezone-aware date key
+    const dateKey = getDateKeyInTimezone(entry.timestamp, timezone);
     const existing = groups.get(dateKey) || [];
     groups.set(dateKey, [...existing, entry]);
   }
@@ -99,7 +80,10 @@ function groupEntriesByDay(entries: NormalizedEntry[]): DayGroup[] {
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([date, dayEntries]) => ({
       date,
-      displayDate: formatDateForDisplay(new Date(date)),
+      displayDate: formatDisplayDateInTimezone(
+        new Date(date + "T12:00:00"),
+        timezone
+      ),
       entries: dayEntries.sort(
         (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
       ),
@@ -116,8 +100,9 @@ export function useGoalEntries(goal: Goal | null): UseGoalEntriesResult {
   const [entriesList, setEntriesList] = useState<NormalizedEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { settings } = useSettings();
 
-  // Calculate period start
+  // Calculate period start using user's timezone
   const periodStart = useMemo(() => {
     if (!goal) return new Date();
 
@@ -126,12 +111,25 @@ export function useGoalEntries(goal: Goal | null): UseGoalEntriesResult {
     const createdAt = goal.createdAt ?? new Date();
 
     try {
-      return calculatePeriodStart(createdAt, resetValue, resetUnit);
+      const createdAtDate =
+        createdAt instanceof Date ? createdAt : new Date(createdAt);
+      return calculatePeriodStartInTimezone(
+        createdAtDate,
+        resetValue,
+        resetUnit,
+        settings.timezone
+      );
     } catch (err) {
       console.error("[useGoalEntries] Error calculating period start:", err);
       return new Date();
     }
-  }, [goal?.id, goal?.createdAt, goal?.resetValue, goal?.resetUnit]);
+  }, [
+    goal?.id,
+    goal?.createdAt,
+    goal?.resetValue,
+    goal?.resetUnit,
+    settings.timezone,
+  ]);
 
   const fetchEntries = useCallback(async () => {
     if (!goal) {
@@ -179,10 +177,10 @@ export function useGoalEntries(goal: Goal | null): UseGoalEntriesResult {
     return unsubscribe;
   }, [fetchEntries]);
 
-  // Group entries by day
+  // Group entries by day using user's timezone
   const groupedByDay = useMemo(
-    () => groupEntriesByDay(entriesList),
-    [entriesList]
+    () => groupEntriesByDay(entriesList, settings.timezone),
+    [entriesList, settings.timezone]
   );
 
   return {

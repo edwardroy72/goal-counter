@@ -8,8 +8,13 @@
  */
 
 import { Text, View } from "react-native";
+import { useSettings } from "../../contexts/SettingsContext";
 import type { Goal } from "../../types/domain";
-import { calculateNextReset, getCountdownText } from "../../utils/date-logic";
+import {
+  calculatePeriodEndInTimezone,
+  formatDateInTimezone,
+  getCountdownTextWithTimezone,
+} from "../../utils/timezone-utils";
 
 interface GoalSummaryCardProps {
   goal: Goal;
@@ -17,42 +22,57 @@ interface GoalSummaryCardProps {
   periodStart: Date;
 }
 
+/**
+ * Get the color classes for remaining value based on completion percentage
+ */
+function getRemainingColorClasses(remaining: number, target: number): string {
+  const completionPercent = ((target - remaining) / target) * 100;
+
+  if (completionPercent >= 100) {
+    return "text-red-500 dark:text-red-400";
+  }
+  if (completionPercent >= 80) {
+    return "text-orange-500 dark:text-orange-400";
+  }
+  return "text-green-600 dark:text-green-400";
+}
+
 export function GoalSummaryCard({
   goal,
   currentTotal,
   periodStart,
 }: GoalSummaryCardProps) {
-  // Calculate countdown
+  const { settings } = useSettings();
+
+  // Calculate countdown using user's timezone
   const createdAt = goal.createdAt ?? new Date();
   const resetValue = goal.resetValue ?? 1;
   const resetUnit = goal.resetUnit ?? "day";
 
-  const nextReset = calculateNextReset(
+  const nextReset = calculatePeriodEndInTimezone(
     createdAt instanceof Date ? createdAt : new Date(createdAt),
     resetValue,
-    resetUnit
+    resetUnit,
+    settings.timezone
   );
-  const countdown = getCountdownText(nextReset);
+  const countdown = getCountdownTextWithTimezone(nextReset);
 
-  // Calculate remaining
-  const remaining = goal.target
-    ? Math.max(0, goal.target - currentTotal)
-    : null;
+  // Calculate remaining (can go negative)
+  const remaining = goal.target !== null ? goal.target - currentTotal : null;
 
   // Calculate progress percentage
   const progressPercent = goal.target
     ? Math.min(100, (currentTotal / goal.target) * 100)
     : null;
 
-  // Format period start for display
-  const periodStartDisplay = periodStart.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year:
-      periodStart.getFullYear() !== new Date().getFullYear()
-        ? "numeric"
-        : undefined,
-  });
+  // Format period start for display in user's timezone
+  const periodStartDisplay = formatDateInTimezone(
+    periodStart,
+    settings.timezone,
+    periodStart.getFullYear() !== new Date().getFullYear()
+      ? "MMM d, yyyy"
+      : "MMM d"
+  );
 
   return (
     <View className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-100 dark:border-zinc-800 mb-4">
@@ -77,16 +97,27 @@ export function GoalSummaryCard({
             {currentTotal.toLocaleString(undefined, {
               maximumFractionDigits: 2,
             })}
+            {goal.unit && (
+              <Text className="text-zinc-400 text-2xl font-bold">
+                {" "}
+                {goal.unit}
+              </Text>
+            )}
           </Text>
           <Text className="text-zinc-400 text-xs font-bold uppercase tracking-tighter">
             Current
           </Text>
         </View>
 
-        {goal.target !== null && (
+        {goal.target !== null && remaining !== null && (
           <View className="items-end">
-            <Text className="text-3xl font-bold text-zinc-700 dark:text-zinc-300">
-              {remaining?.toLocaleString(undefined, {
+            <Text
+              className={`text-3xl font-bold ${getRemainingColorClasses(
+                remaining,
+                goal.target
+              )}`}
+            >
+              {remaining.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
               })}
             </Text>
