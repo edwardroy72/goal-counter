@@ -14,6 +14,11 @@ export const GoalStatus = {
   ARCHIVED: "archived",
 } as const;
 
+export const GoalType = {
+  COUNTER: "counter",
+  MEASUREMENT: "measurement",
+} as const;
+
 // --- Tables ---
 
 export const goals = sqliteTable("goals", {
@@ -21,6 +26,9 @@ export const goals = sqliteTable("goals", {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
+  type: text("type")
+    .$type<(typeof GoalType)[keyof typeof GoalType]>()
+    .default("counter"),
   unit: text("unit"), // e.g., "kg", "mL"
   target: real("target"), // Float for 2-decimal precision
 
@@ -29,6 +37,9 @@ export const goals = sqliteTable("goals", {
   resetUnit: text("reset_unit")
     .$type<(typeof ResetUnit)[keyof typeof ResetUnit]>()
     .default("day"),
+  rollingWindowValue: integer("rolling_window_value"),
+  rollingWindowUnit: text("rolling_window_unit")
+    .$type<Exclude<(typeof ResetUnit)[keyof typeof ResetUnit], "none">>(),
 
   // Quick Add Slots (Index 0 is required, others optional)
   quickAdd1: real("quick_add_1").notNull(),

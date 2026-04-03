@@ -3,12 +3,12 @@
  *
  * Displays detailed view of a goal with:
  * - Summary card (current total, target, countdown)
- * - Tab navigation (Current Period / Ledger)
+ * - Tab navigation (Tracking / History)
  * - Entry management (add, edit, delete)
  */
 
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import {
   CurrentPeriodView,
@@ -16,22 +16,42 @@ import {
   GoalDetailHeader,
   GoalSummaryCard,
   ManualAddModal,
+  MeasurementTrackingView,
   TabBar,
   type TabId,
 } from "../../components/goal-detail";
 import { HistoryLedgerView } from "../../components/goal-detail/HistoryLedgerView";
+import { useSettings } from "../../contexts/SettingsContext";
 import { useEntryActions } from "../../hooks/useEntryActions";
 import { useGoalById } from "../../hooks/useGoalById";
-import {
-  useGoalEntries,
-  type NormalizedEntry,
-} from "../../hooks/useGoalEntries";
+import type { NormalizedEntry } from "../../hooks/useGoalEntries";
+import { useGoalGraph } from "../../hooks/useGoalGraph";
 import { useGoalHistory } from "../../hooks/useGoalHistory";
+import { useGoalLatestEntry } from "../../hooks/useGoalLatestEntry";
+import { useGoalRollingSummary } from "../../hooks/useGoalRollingSummary";
 import { useGoalTotal } from "../../hooks/useGoalTotal";
+import {
+  getGoalRollingPresetCounts,
+  type GoalGraphRange,
+} from "../../services/goal-analytics";
+import { calculatePeriodStartInTimezone } from "../../utils/timezone-utils";
 
 export default function GoalDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const goalId = typeof id === "string" ? id : "";
+  const { settings } = useSettings();
+
+  // UI state
+  const [activeTab, setActiveTab] = useState<TabId>("tracking");
+  const [graphRange, setGraphRange] = useState<GoalGraphRange>("7d");
+  const [selectedRollingPeriodCount, setSelectedRollingPeriodCount] = useState<
+    number | null
+  >(null);
+  const [countEmptyRollingPeriods, setCountEmptyRollingPeriods] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<NormalizedEntry | null>(
+    null
+  );
+  const [showManualAdd, setShowManualAdd] = useState(false);
 
   // Data fetching hooks
   const {
@@ -39,21 +59,74 @@ export default function GoalDetail() {
     isLoading: isLoadingGoal,
     error: goalError,
   } = useGoalById(goalId);
-  const currentTotal = useGoalTotal(goal ?? createPlaceholderGoal(goalId));
+  const goalType = goal?.type ?? "counter";
+  const isMeasurementGoal = goalType === "measurement";
+  const currentTotal = useGoalTotal(goal ?? createPlaceholderGoal(goalId), {
+    enabled: goal !== null && !isMeasurementGoal,
+  });
+  const { latestEntry } = useGoalLatestEntry(goalId, {
+    enabled: goal !== null && isMeasurementGoal,
+  });
+  const rollingPresetCounts = useMemo(
+    () => getGoalRollingPresetCounts(goal?.resetUnit),
+    [goal?.resetUnit]
+  );
+  const { summary: rollingSummary, isLoading: isLoadingRollingSummary } =
+    useGoalRollingSummary(goal, {
+      enabled:
+        activeTab === "tracking" &&
+        !isMeasurementGoal &&
+        selectedRollingPeriodCount !== null,
+      countEmptyPeriods: countEmptyRollingPeriods,
+      periodCount: selectedRollingPeriodCount,
+    });
+  const { graph, isLoading: isLoadingGraph } = useGoalGraph(goal, graphRange, {
+    enabled: activeTab === "tracking",
+  });
   const {
-    groupedByDay,
-    isLoading: isLoadingEntries,
-    periodStart,
-  } = useGoalEntries(goal);
-  const { periods, isLoading: isLoadingHistory } = useGoalHistory(goal);
+    periods,
+    isLoading: isLoadingHistory,
+    isLoadingMore: isLoadingMoreHistory,
+    hasMore: hasMoreHistory,
+    loadMore: loadMoreHistory,
+  } = useGoalHistory(
+    activeTab === "history" ? goal : null
+  );
   const { deleteEntry } = useEntryActions();
 
-  // UI state
-  const [activeTab, setActiveTab] = useState<TabId>("current");
-  const [editingEntry, setEditingEntry] = useState<NormalizedEntry | null>(
-    null
-  );
-  const [showManualAdd, setShowManualAdd] = useState(false);
+  const periodStart = useMemo(() => {
+    if (!goal) {
+      return new Date();
+    }
+
+    const createdAt =
+      goal.createdAt instanceof Date ? goal.createdAt : new Date(goal.createdAt);
+
+    return calculatePeriodStartInTimezone(
+      createdAt,
+      goal.resetValue ?? 1,
+      goal.resetUnit ?? "day",
+      settings.timezone
+    );
+  }, [
+    goal,
+    settings.timezone,
+  ]);
+
+  useEffect(() => {
+    if (isMeasurementGoal || rollingPresetCounts.length === 0) {
+      setSelectedRollingPeriodCount(null);
+      return;
+    }
+
+    setSelectedRollingPeriodCount((current) => {
+      if (current !== null && rollingPresetCounts.includes(current)) {
+        return current;
+      }
+
+      return rollingPresetCounts[0] ?? null;
+    });
+  }, [isMeasurementGoal, rollingPresetCounts]);
 
   // Entry actions
   const handleEditEntry = useCallback((entry: NormalizedEntry) => {
@@ -79,6 +152,10 @@ export default function GoalDetail() {
   const handleCloseManualAdd = useCallback(() => {
     setShowManualAdd(false);
   }, []);
+
+  const currentValue = isMeasurementGoal
+    ? latestEntry?.amount ?? null
+    : currentTotal;
 
   // Loading state
   if (isLoadingGoal) {
@@ -112,28 +189,54 @@ export default function GoalDetail() {
       {/* Summary Card */}
       <GoalSummaryCard
         goal={goal}
-        currentTotal={currentTotal}
+        currentValue={currentValue}
         periodStart={periodStart}
+        lastEntryAt={latestEntry?.timestamp ?? null}
       />
 
       {/* Tab Bar */}
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Tab Content */}
-      {activeTab === "current" ? (
-        <CurrentPeriodView
-          goal={goal}
-          groupedEntries={groupedByDay}
-          isLoading={isLoadingEntries}
-          onManualAdd={handleOpenManualAdd}
-          onEditEntry={handleEditEntry}
-          onDeleteEntry={handleDeleteEntry}
-        />
+      {activeTab === "tracking" ? (
+        isMeasurementGoal ? (
+          <MeasurementTrackingView
+            goal={goal}
+            graph={graph}
+            graphRange={graphRange}
+            isGraphLoading={isLoadingGraph}
+            timezone={settings.timezone}
+            onGraphRangeChange={setGraphRange}
+          />
+        ) : (
+          <CurrentPeriodView
+            goal={goal}
+            onManualAdd={handleOpenManualAdd}
+            graph={graph}
+            graphRange={graphRange}
+            isGraphLoading={isLoadingGraph}
+            rollingSummary={rollingSummary}
+            isRollingSummaryLoading={isLoadingRollingSummary}
+            rollingPeriodCounts={rollingPresetCounts}
+            selectedRollingPeriodCount={selectedRollingPeriodCount}
+            countEmptyRollingPeriods={countEmptyRollingPeriods}
+            timezone={settings.timezone}
+            onGraphRangeChange={setGraphRange}
+            onCountEmptyRollingPeriodsChange={setCountEmptyRollingPeriods}
+            onRollingPeriodCountChange={setSelectedRollingPeriodCount}
+          />
+        )
       ) : (
         <HistoryLedgerView
           periods={periods}
+          goalType={goalType}
           unit={goal.unit}
           isLoading={isLoadingHistory}
+          isLoadingMore={isLoadingMoreHistory}
+          hasMore={hasMoreHistory}
+          onLoadMore={() => {
+            void loadMoreHistory();
+          }}
           onEditEntry={handleEditEntry}
           onDeleteEntry={handleDeleteEntry}
         />
@@ -148,11 +251,13 @@ export default function GoalDetail() {
       />
 
       {/* Manual Add Modal */}
-      <ManualAddModal
-        visible={showManualAdd}
-        goal={goal}
-        onClose={handleCloseManualAdd}
-      />
+      {!isMeasurementGoal ? (
+        <ManualAddModal
+          visible={showManualAdd}
+          goal={goal}
+          onClose={handleCloseManualAdd}
+        />
+      ) : null}
     </View>
   );
 }
@@ -164,10 +269,13 @@ function createPlaceholderGoal(id: string) {
   return {
     id,
     title: "",
+    type: "counter" as const,
     unit: null,
     target: null,
     resetValue: 1,
     resetUnit: "day" as const,
+    rollingWindowValue: null,
+    rollingWindowUnit: null,
     quickAdd1: 1,
     quickAdd2: null,
     quickAdd3: null,

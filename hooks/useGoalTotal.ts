@@ -15,24 +15,33 @@ import { entries } from "../db/schema";
 import type { Goal } from "../types/domain";
 import { calculatePeriodStartInTimezone } from "../utils/timezone-utils";
 
+interface UseGoalTotalOptions {
+  enabled?: boolean;
+}
+
 /**
  * Hook to calculate the current period total for a goal
  * @param goal - Goal to calculate total for
  * @returns Current period total (number)
  */
-export function useGoalTotal(goal: Goal): number {
+export function useGoalTotal(
+  goal: Goal,
+  options: UseGoalTotalOptions = {}
+): number {
   const [total, setTotal] = useState<number>(0);
   const { settings } = useSettings();
+  const enabled = options.enabled ?? true;
+  const goalType = goal.type ?? "counter";
 
   // Provide defaults for nullable fields
   const resetValue = goal.resetValue ?? 1;
   const resetUnit = goal.resetUnit ?? "day";
-  const createdAt = goal.createdAt ?? new Date();
 
   // Calculate the start of the current period using user's timezone
   // Memoized to prevent unnecessary recalculation
   const periodStart = useMemo(() => {
     try {
+      const createdAt = goal.createdAt ?? new Date();
       const createdAtDate =
         createdAt instanceof Date ? createdAt : new Date(createdAt);
       return calculatePeriodStartInTimezone(
@@ -45,7 +54,7 @@ export function useGoalTotal(goal: Goal): number {
       // Log error but don't crash - fallback to returning 0
       console.error("[useGoalTotal] Error calculating period start:", error, {
         goalId: goal.id,
-        createdAt,
+        createdAt: goal.createdAt,
         resetValue,
         resetUnit,
         timezone: settings.timezone,
@@ -53,10 +62,15 @@ export function useGoalTotal(goal: Goal): number {
       // Return a safe fallback (current time)
       return new Date();
     }
-  }, [goal.id, createdAt, resetValue, resetUnit, settings.timezone]);
+  }, [goal.createdAt, goal.id, resetValue, resetUnit, settings.timezone]);
 
   // Fetch the total from database
   const fetchTotal = useCallback(async () => {
+    if (!enabled || goalType === "measurement") {
+      setTotal(0);
+      return;
+    }
+
     try {
       if (process.env.NODE_ENV !== "test") {
         console.log(
@@ -87,18 +101,27 @@ export function useGoalTotal(goal: Goal): number {
       console.error("[useGoalTotal] Error fetching total:", err);
       setTotal(0);
     }
-  }, [goal.id, periodStart]);
+  }, [enabled, goal.id, goalType, periodStart]);
 
   // Initial fetch on mount
   useEffect(() => {
+    if (!enabled || goalType === "measurement") {
+      setTotal(0);
+      return;
+    }
+
     if (process.env.NODE_ENV !== "test") {
       console.log("[useGoalTotal] Initial fetch for goal:", goal.id);
     }
     fetchTotal();
-  }, [fetchTotal]);
+  }, [enabled, fetchTotal, goal.id, goalType]);
 
   // Subscribe to cache invalidation events and refetch
   useEffect(() => {
+    if (!enabled || goalType === "measurement") {
+      return;
+    }
+
     if (process.env.NODE_ENV !== "test") {
       console.log(
         "[useGoalTotal] Subscribing to query cache for goal:",
@@ -125,7 +148,7 @@ export function useGoalTotal(goal: Goal): number {
       }
       unsubscribe();
     };
-  }, [goal.id, fetchTotal]);
+  }, [enabled, fetchTotal, goal.id, goalType]);
 
   return total;
 }

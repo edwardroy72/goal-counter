@@ -1,10 +1,9 @@
 /**
  * GoalSummaryCard Component
  *
- * Displays the current period summary including:
- * - Current total
- * - Target and remaining (if applicable)
- * - Countdown to next reset
+ * Displays the summary at the top of the goal detail screen.
+ * Counter goals show the current period summary, while measurement goals
+ * show the latest measurement and optional target delta.
  */
 
 import { Text, View } from "react-native";
@@ -18,8 +17,23 @@ import {
 
 interface GoalSummaryCardProps {
   goal: Goal;
-  currentTotal: number;
+  currentValue: number | null;
   periodStart: Date;
+  lastEntryAt?: Date | null;
+}
+
+interface MeasurementSecondaryMetric {
+  label: string;
+  value: string;
+  tone: string;
+}
+
+function formatValue(value: number, unit?: string | null): string {
+  const formatted = value.toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  });
+
+  return unit ? `${formatted} ${unit}` : formatted;
 }
 
 /**
@@ -37,12 +51,99 @@ function getRemainingColorClasses(remaining: number, target: number): string {
   return "text-green-600 dark:text-green-400";
 }
 
+function getMeasurementUpdatedLabel(
+  lastEntryAt: Date | null | undefined,
+  timezone: string
+): string {
+  if (!lastEntryAt) {
+    return "No measurements yet";
+  }
+
+  return `Last updated ${formatDateInTimezone(
+    lastEntryAt,
+    timezone,
+    "MMM d, h:mm a"
+  )}`;
+}
+
+function getMeasurementSecondaryMetric(input: {
+  goal: Goal;
+  currentValue: number | null;
+}): MeasurementSecondaryMetric | null {
+  if (input.goal.target === null) {
+    return null;
+  }
+
+  if (input.currentValue === null) {
+    return {
+      label: "Target",
+      value: formatValue(input.goal.target, input.goal.unit),
+      tone: "text-zinc-900 dark:text-zinc-100",
+    };
+  }
+
+  return {
+    label: "To Target",
+    value: formatValue(Math.abs(input.goal.target - input.currentValue), input.goal.unit),
+    tone: "text-green-600 dark:text-green-400",
+  };
+}
+
 export function GoalSummaryCard({
   goal,
-  currentTotal,
+  currentValue,
   periodStart,
+  lastEntryAt = null,
 }: GoalSummaryCardProps) {
   const { settings } = useSettings();
+  const goalType = goal.type ?? "counter";
+  const isMeasurementGoal = goalType === "measurement";
+
+  if (isMeasurementGoal) {
+    const secondaryMetric = getMeasurementSecondaryMetric({
+      goal,
+      currentValue,
+    });
+
+    return (
+      <View className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-100 dark:border-zinc-800 mb-4">
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest">
+            Latest Measurement
+          </Text>
+          <View className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
+            <Text className="text-zinc-500 dark:text-zinc-300 text-[10px] font-bold">
+              {getMeasurementUpdatedLabel(lastEntryAt, settings.timezone)}
+            </Text>
+          </View>
+        </View>
+
+        <View className="flex-row justify-between items-end">
+          <View className="flex-1 pr-4">
+            <Text className="text-5xl font-black dark:text-white">
+              {currentValue !== null ? formatValue(currentValue, goal.unit) : "No data"}
+            </Text>
+            <Text className="text-zinc-400 text-xs font-bold uppercase tracking-tighter mt-2">
+              Current
+            </Text>
+          </View>
+
+          {secondaryMetric ? (
+            <View className="items-end">
+              <Text className={`text-2xl font-bold ${secondaryMetric.tone}`}>
+                {secondaryMetric.value}
+              </Text>
+              <Text className="text-zinc-400 text-xs font-bold uppercase tracking-tighter mt-1">
+                {secondaryMetric.label}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
+  const safeCurrentTotal = currentValue ?? 0;
 
   // Calculate countdown using user's timezone
   const createdAt = goal.createdAt ?? new Date();
@@ -58,11 +159,11 @@ export function GoalSummaryCard({
   const countdown = getCountdownTextWithTimezone(nextReset);
 
   // Calculate remaining (can go negative)
-  const remaining = goal.target !== null ? goal.target - currentTotal : null;
+  const remaining = goal.target !== null ? goal.target - safeCurrentTotal : null;
 
   // Calculate progress percentage
   const progressPercent = goal.target
-    ? Math.min(100, (currentTotal / goal.target) * 100)
+    ? Math.min(100, (safeCurrentTotal / goal.target) * 100)
     : null;
 
   // Format period start for display in user's timezone
@@ -76,7 +177,6 @@ export function GoalSummaryCard({
 
   return (
     <View className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-100 dark:border-zinc-800 mb-4">
-      {/* Period indicator */}
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest">
           Since {periodStartDisplay}
@@ -90,11 +190,10 @@ export function GoalSummaryCard({
         )}
       </View>
 
-      {/* Main stats */}
       <View className="flex-row justify-between items-end mb-4">
         <View>
           <Text className="text-5xl font-black dark:text-white">
-            {currentTotal.toLocaleString(undefined, {
+            {safeCurrentTotal.toLocaleString(undefined, {
               maximumFractionDigits: 2,
             })}
             {goal.unit && (
@@ -128,7 +227,6 @@ export function GoalSummaryCard({
         )}
       </View>
 
-      {/* Progress bar */}
       {progressPercent !== null && (
         <View className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
           <View
@@ -140,7 +238,6 @@ export function GoalSummaryCard({
         </View>
       )}
 
-      {/* Target display */}
       {goal.target !== null && (
         <View className="flex-row justify-end mt-2">
           <Text className="text-zinc-400 text-xs">
@@ -148,6 +245,7 @@ export function GoalSummaryCard({
           </Text>
         </View>
       )}
+
     </View>
   );
 }

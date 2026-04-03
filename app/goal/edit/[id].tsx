@@ -16,23 +16,23 @@ import {
   Alert,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  GoalFormFields,
+  MeasurementGoalFormFields,
+} from "../../../components/goal-form";
 import { db } from "../../../db/client";
 import { queryCache } from "../../../db/query-cache";
 import { goals } from "../../../db/schema";
 import { useGoalById } from "../../../hooks/useGoalById";
+import { useGoalLifecycle } from "../../../hooks/useGoalLifecycle";
+import type { ResetUnit } from "../../../types/domain";
+import { buildGoalMutationValues } from "../../../utils/goal-config";
+import { buildMeasurementGoalMutationValues } from "../../../utils/measurement-goal-config";
 
-type ResetUnitType = "day" | "week" | "month" | "none";
-
-const RESET_UNIT_OPTIONS: { value: ResetUnitType; label: string }[] = [
-  { value: "day", label: "Day(s)" },
-  { value: "week", label: "Week(s)" },
-  { value: "month", label: "Month(s)" },
-  { value: "none", label: "Never" },
-];
+type ResetUnitType = ResetUnit;
 
 export default function EditGoal() {
   const router = useRouter();
@@ -40,6 +40,14 @@ export default function EditGoal() {
   const goalId = typeof id === "string" ? id : "";
 
   const { goal, isLoading, error } = useGoalById(goalId);
+  const {
+    archiveGoal,
+    unarchiveGoal,
+    deleteGoal,
+    duplicateGoal,
+    isProcessing: isLifecycleProcessing,
+    activeAction,
+  } = useGoalLifecycle();
 
   // Form State
   const [title, setTitle] = useState("");
@@ -51,6 +59,9 @@ export default function EditGoal() {
   const [quickAdd2, setQuickAdd2] = useState("");
   const [quickAdd3, setQuickAdd3] = useState("");
   const [quickAdd4, setQuickAdd4] = useState("");
+  const [measurementTitle, setMeasurementTitle] = useState("");
+  const [measurementUnit, setMeasurementUnit] = useState("");
+  const [measurementTarget, setMeasurementTarget] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState(3);
@@ -100,41 +111,43 @@ export default function EditGoal() {
       setQuickAdd2(goal.quickAdd2 !== null ? String(goal.quickAdd2) : "");
       setQuickAdd3(goal.quickAdd3 !== null ? String(goal.quickAdd3) : "");
       setQuickAdd4(goal.quickAdd4 !== null ? String(goal.quickAdd4) : "");
+      setMeasurementTitle(goal.title);
+      setMeasurementUnit(goal.unit || "");
+      setMeasurementTarget(goal.target !== null ? String(goal.target) : "");
     }
   }, [goal]);
 
   const handleSave = async () => {
-    if (!title.trim()) {
-      Alert.alert("Missing Info", "Goal Name is required.");
+    const goalType = goal?.type ?? "counter";
+    const result =
+      goalType === "measurement"
+        ? buildMeasurementGoalMutationValues({
+            title: measurementTitle,
+            unit: measurementUnit,
+            target: measurementTarget,
+          })
+        : buildGoalMutationValues({
+            title,
+            unit,
+            target,
+            resetValue,
+            resetUnit,
+            quickAdd1,
+            quickAdd2,
+            quickAdd3,
+            quickAdd4,
+          });
+
+    if (!result.ok) {
+      Alert.alert(result.error.title, result.error.message);
       return;
     }
-
-    const qa1 = parseFloat(quickAdd1);
-    if (!quickAdd1 || isNaN(qa1) || qa1 <= 0) {
-      Alert.alert("Missing Info", "At least one Quick Add value is required.");
-      return;
-    }
-
-    const parseQuickAdd = (val: string): number | null => {
-      const parsed = parseFloat(val);
-      return val && !isNaN(parsed) && parsed > 0 ? parsed : null;
-    };
 
     setIsSaving(true);
     try {
       await db
         .update(goals)
-        .set({
-          title: title.trim(),
-          unit: unit.trim() || null,
-          target: target ? parseFloat(target) : null,
-          resetValue: resetUnit === "none" ? 0 : parseInt(resetValue) || 1,
-          resetUnit: resetUnit,
-          quickAdd1: qa1,
-          quickAdd2: parseQuickAdd(quickAdd2),
-          quickAdd3: parseQuickAdd(quickAdd3),
-          quickAdd4: parseQuickAdd(quickAdd4),
-        })
+        .set(result.values)
         .where(eq(goals.id, goalId));
 
       queryCache.invalidate();
@@ -154,8 +167,10 @@ export default function EditGoal() {
         clearTimeout(deleteTimeoutRef.current);
       }
       try {
-        await db.delete(goals).where(eq(goals.id, goalId));
-        queryCache.invalidate();
+        const success = await deleteGoal(goalId);
+        if (!success) {
+          throw new Error("Delete failed");
+        }
         // Navigate back to dashboard
         router.replace("/");
       } catch (err) {
@@ -167,7 +182,40 @@ export default function EditGoal() {
       // First tap - show confirmation
       setConfirmingDelete(true);
     }
-  }, [confirmingDelete, goalId, router]);
+  }, [confirmingDelete, deleteGoal, goalId, router]);
+
+  const handleArchiveToggle = useCallback(async () => {
+    const isArchived = goal?.status === "archived";
+    const success = isArchived
+      ? await unarchiveGoal(goalId)
+      : await archiveGoal(goalId);
+
+    if (!success) {
+      Alert.alert(
+        "Error",
+        isArchived ? "Failed to unarchive goal." : "Failed to archive goal."
+      );
+      return;
+    }
+
+    if (isArchived) {
+      router.back();
+      return;
+    }
+
+    router.replace("/");
+  }, [archiveGoal, goal?.status, goalId, router, unarchiveGoal]);
+
+  const handleDuplicate = useCallback(async () => {
+    const duplicatedGoalId = await duplicateGoal(goalId);
+
+    if (!duplicatedGoalId) {
+      Alert.alert("Error", "Failed to duplicate goal.");
+      return;
+    }
+
+    router.replace(`/goal/${duplicatedGoalId}`);
+  }, [duplicateGoal, goalId, router]);
 
   if (isLoading) {
     return (
@@ -191,6 +239,13 @@ export default function EditGoal() {
     );
   }
 
+  const isArchived = goal.status === "archived";
+  const isMeasurementGoal = (goal.type ?? "counter") === "measurement";
+  const isDuplicatePending = activeAction === "duplicate";
+  const isArchivePending =
+    activeAction === "archive" || activeAction === "unarchive";
+  const isDeletePending = activeAction === "delete";
+
   return (
     <ScrollView className="flex-1 bg-zinc-900 p-6 pt-20">
       <View className="flex-row justify-between items-center mb-10">
@@ -203,137 +258,58 @@ export default function EditGoal() {
         </TouchableOpacity>
       </View>
 
-      {/* Goal Name */}
       <View className="mb-6">
         <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-          Goal Name
+          Goal Type
         </Text>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="e.g., Daily Water"
-          placeholderTextColor="#52525b"
-          className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+        <View className="bg-zinc-800 border border-zinc-700/50 rounded-2xl px-5 py-4">
+          <Text className="text-white text-base font-semibold">
+            {isMeasurementGoal ? "Measurement" : "Counter"}
+          </Text>
+          <Text className="text-zinc-500 text-sm mt-1">
+            {isMeasurementGoal
+              ? "Tracks point-in-time values and never resets."
+              : "Tracks cumulative progress with reset periods and quick adds."}
+          </Text>
+        </View>
+      </View>
+
+      {isMeasurementGoal ? (
+        <MeasurementGoalFormFields
+          title={measurementTitle}
+          unit={measurementUnit}
+          target={measurementTarget}
+          onTitleChange={setMeasurementTitle}
+          onUnitChange={setMeasurementUnit}
+          onTargetChange={setMeasurementTarget}
         />
-      </View>
-
-      {/* Target & Unit */}
-      <View className="flex-row gap-4 mb-6">
-        <View className="flex-1">
-          <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-            Target (optional)
-          </Text>
-          <TextInput
-            value={target}
-            onChangeText={setTarget}
-            keyboardType="decimal-pad"
-            placeholder="e.g. 2000"
-            placeholderTextColor="#52525b"
-            className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
-          />
-        </View>
-        <View className="flex-1">
-          <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-            Unit
-          </Text>
-          <TextInput
-            value={unit}
-            onChangeText={setUnit}
-            placeholder="e.g. mL"
-            placeholderTextColor="#52525b"
-            className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
-          />
-        </View>
-      </View>
-
-      {/* Reset Interval */}
-      <View className="mb-6">
-        <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-          Reset Every
-        </Text>
-        <View className="flex-row gap-3">
-          {resetUnit !== "none" && (
-            <TextInput
-              value={resetValue}
-              onChangeText={setResetValue}
-              keyboardType="number-pad"
-              placeholder="1"
-              placeholderTextColor="#52525b"
-              className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50 w-20 text-center"
-            />
-          )}
-          <View className="flex-1 flex-row flex-wrap gap-2">
-            {RESET_UNIT_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => setResetUnit(option.value)}
-                className={`flex-1 min-w-[70px] py-3 px-2 rounded-xl border ${
-                  resetUnit === option.value
-                    ? "bg-blue-600 border-blue-500"
-                    : "bg-zinc-800 border-zinc-700/50"
-                }`}
-              >
-                <Text
-                  className={`text-center text-sm font-medium ${
-                    resetUnit === option.value ? "text-white" : "text-zinc-400"
-                  }`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      {/* Quick Add Amounts */}
-      <View className="mb-6">
-        <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-          Quick Add Amounts (up to 4)
-        </Text>
-        <View className="flex-row gap-3">
-          <TextInput
-            value={quickAdd1}
-            onChangeText={setQuickAdd1}
-            keyboardType="decimal-pad"
-            placeholder="1*"
-            placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
-          />
-          <TextInput
-            value={quickAdd2}
-            onChangeText={setQuickAdd2}
-            keyboardType="decimal-pad"
-            placeholder="+"
-            placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
-          />
-          <TextInput
-            value={quickAdd3}
-            onChangeText={setQuickAdd3}
-            keyboardType="decimal-pad"
-            placeholder="+"
-            placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
-          />
-          <TextInput
-            value={quickAdd4}
-            onChangeText={setQuickAdd4}
-            keyboardType="decimal-pad"
-            placeholder="+"
-            placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
-          />
-        </View>
-        <Text className="text-zinc-600 text-xs mt-2 ml-1">
-          First value is required. Leave others empty if not needed.
-        </Text>
-      </View>
+      ) : (
+        <GoalFormFields
+          title={title}
+          unit={unit}
+          target={target}
+          resetValue={resetValue}
+          resetUnit={resetUnit}
+          quickAdd1={quickAdd1}
+          quickAdd2={quickAdd2}
+          quickAdd3={quickAdd3}
+          quickAdd4={quickAdd4}
+          onTitleChange={setTitle}
+          onUnitChange={setUnit}
+          onTargetChange={setTarget}
+          onResetValueChange={setResetValue}
+          onResetUnitChange={setResetUnit}
+          onQuickAdd1Change={setQuickAdd1}
+          onQuickAdd2Change={setQuickAdd2}
+          onQuickAdd3Change={setQuickAdd3}
+          onQuickAdd4Change={setQuickAdd4}
+        />
+      )}
 
       {/* Save Button */}
       <TouchableOpacity
         onPress={handleSave}
-        disabled={isSaving}
+        disabled={isSaving || isLifecycleProcessing}
         activeOpacity={0.8}
         className={`p-5 rounded-3xl mt-6 shadow-lg ${
           isSaving ? "bg-blue-800" : "bg-blue-600"
@@ -344,9 +320,46 @@ export default function EditGoal() {
         </Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        onPress={handleDuplicate}
+        disabled={isSaving || isLifecycleProcessing}
+        activeOpacity={0.8}
+        className={`p-5 rounded-3xl mt-4 border ${
+          isDuplicatePending
+            ? "bg-zinc-700 border-zinc-600"
+            : "bg-zinc-800 border-zinc-700"
+        }`}
+      >
+        <Text className="text-white text-center font-bold text-lg">
+          {isDuplicatePending ? "Duplicating..." : "Duplicate Goal"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={handleArchiveToggle}
+        disabled={isSaving || isLifecycleProcessing}
+        activeOpacity={0.8}
+        className={`p-5 rounded-3xl mt-4 ${
+          isArchived
+            ? "bg-emerald-500/70 border border-emerald-500/30"
+            : "bg-amber-500/70 border border-amber-500/30"
+        }`}
+      >
+        <Text className="text-center font-bold text-lg text-white">
+          {isArchivePending
+            ? isArchived
+              ? "Unarchiving..."
+              : "Archiving..."
+            : isArchived
+              ? "Unarchive Goal"
+              : "Archive Goal"}
+        </Text>
+      </TouchableOpacity>
+
       {/* Delete Button */}
       <TouchableOpacity
         onPress={handleDelete}
+        disabled={isSaving || isLifecycleProcessing}
         activeOpacity={0.8}
         className={`p-5 rounded-3xl mt-4 ${
           confirmingDelete
@@ -355,7 +368,9 @@ export default function EditGoal() {
         }`}
       >
         <Text className={`text-center font-bold text-lg text-white`}>
-          {confirmingDelete
+          {isDeletePending
+            ? "Deleting..."
+            : confirmingDelete
             ? `Tap Again to Confirm Delete (${deleteCountdown})`
             : "Delete Goal"}
         </Text>

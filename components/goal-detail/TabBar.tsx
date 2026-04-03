@@ -1,12 +1,12 @@
 /**
  * TabBar Component
  *
- * Simple tab navigation for Current Period / Ledger views.
+ * Simple tab navigation for Tracking / History views.
  */
 
 import { Text, TouchableOpacity, View } from "react-native";
 
-export type TabId = "current" | "ledger";
+export type TabId = "tracking" | "history";
 
 interface Tab {
   id: TabId;
@@ -14,8 +14,8 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "current", label: "Current Period" },
-  { id: "ledger", label: "Ledger" },
+  { id: "tracking", label: "Tracking" },
+  { id: "history", label: "History" },
 ];
 
 interface TabBarProps {

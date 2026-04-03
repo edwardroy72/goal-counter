@@ -1,52 +1,79 @@
 /**
  * CurrentPeriodView Component
  *
- * Shows the current period summary with Manual Add button.
+ * Shows tracking controls with Manual Add, Quick Add buttons,
+ * and the progress graph in a scrollable layout.
  */
 
 import { Plus } from "lucide-react-native";
-import { Text, TouchableOpacity, View } from "react-native";
-import type { DayGroup, NormalizedEntry } from "../../hooks/useGoalEntries";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useGoalActions } from "../../hooks/useGoalActions";
 import type { Goal } from "../../types/domain";
-import { EntryItem } from "./EntryItem";
+import type {
+  GoalGraphData,
+  GoalGraphRange,
+  GoalRollingSummary,
+} from "../../services/goal-analytics";
+import { GoalGraphCard } from "./GoalGraphCard";
+import { GoalPeriodDifferenceCard } from "./GoalPeriodDifferenceCard";
 
 interface CurrentPeriodViewProps {
   goal: Goal;
-  groupedEntries: DayGroup[];
-  isLoading: boolean;
   onManualAdd: () => void;
-  onEditEntry: (entry: NormalizedEntry) => void;
-  onDeleteEntry: (entry: NormalizedEntry) => void;
+  graph: GoalGraphData | null;
+  graphRange: GoalGraphRange;
+  isGraphLoading: boolean;
+  rollingSummary: GoalRollingSummary | null;
+  isRollingSummaryLoading: boolean;
+  rollingPeriodCounts: number[];
+  selectedRollingPeriodCount: number | null;
+  countEmptyRollingPeriods: boolean;
+  timezone: string;
+  onGraphRangeChange: (range: GoalGraphRange) => void;
+  onCountEmptyRollingPeriodsChange: (value: boolean) => void;
+  onRollingPeriodCountChange: (periodCount: number) => void;
 }
 
 export function CurrentPeriodView({
   goal,
-  groupedEntries,
-  isLoading,
   onManualAdd,
-  onEditEntry,
-  onDeleteEntry,
+  graph,
+  graphRange,
+  isGraphLoading,
+  rollingSummary,
+  isRollingSummaryLoading,
+  rollingPeriodCounts,
+  selectedRollingPeriodCount,
+  countEmptyRollingPeriods,
+  timezone,
+  onGraphRangeChange,
+  onCountEmptyRollingPeriodsChange,
+  onRollingPeriodCountChange,
 }: CurrentPeriodViewProps) {
-  // Get recent entries (last 5 across all days)
-  const recentEntries = groupedEntries
-    .flatMap((group) => group.entries)
-    .slice(0, 5);
-
   return (
-    <View className="flex-1">
-      {/* Manual Add Button */}
-      <TouchableOpacity
-        onPress={onManualAdd}
-        accessibilityLabel="Add entry manually"
-        accessibilityRole="button"
-        className="flex-row items-center justify-center bg-blue-600 py-4 rounded-2xl mb-6"
-      >
-        <Plus color="white" size={20} strokeWidth={3} />
-        <Text className="text-white font-bold text-lg ml-2">Manual Add</Text>
-      </TouchableOpacity>
+    <ScrollView
+      className="flex-1"
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 100 }}
+    >
+      <View className="rounded-3xl border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80 mb-6">
+        <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">
+          Add Entries
+        </Text>
+        <Text className="text-zinc-900 dark:text-zinc-100 text-base font-semibold mb-4">
+          Manual and quick ways to log progress
+        </Text>
 
-      {/* Quick Add Buttons */}
-      <View className="mb-6">
+        <TouchableOpacity
+          onPress={onManualAdd}
+          accessibilityLabel="Add entry manually"
+          accessibilityRole="button"
+          className="flex-row items-center justify-center bg-blue-600 py-4 rounded-2xl mb-5"
+        >
+          <Plus color="white" size={20} strokeWidth={3} />
+          <Text className="text-white font-bold text-lg ml-2">Manual Add</Text>
+        </TouchableOpacity>
+
         <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-3 px-1">
           Quick Add
         </Text>
@@ -59,49 +86,28 @@ export function CurrentPeriodView({
         </View>
       </View>
 
-      {/* Recent Activity */}
-      <View>
-        <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-3 px-1">
-          Recent Activity
-        </Text>
+      <GoalGraphCard
+        graph={graph}
+        isLoading={isGraphLoading}
+        range={graphRange}
+        timezone={timezone}
+        unit={goal.unit}
+        onRangeChange={onGraphRangeChange}
+      />
 
-        {isLoading ? (
-          <View className="py-8 items-center">
-            <Text className="text-zinc-400">Loading...</Text>
-          </View>
-        ) : recentEntries.length === 0 ? (
-          <View className="py-8 items-center">
-            <Text className="text-zinc-400 text-center">
-              No entries this period
-            </Text>
-          </View>
-        ) : (
-          <View>
-            {recentEntries.map((entry) => (
-              <EntryItem
-                key={entry.id}
-                entry={entry}
-                unit={goal.unit}
-                onEdit={onEditEntry}
-                onDelete={onDeleteEntry}
-              />
-            ))}
-            {groupedEntries.flatMap((g) => g.entries).length > 5 && (
-              <Text className="text-zinc-400 text-center text-sm mt-2">
-                Switch to Ledger tab to see all entries
-              </Text>
-            )}
-          </View>
-        )}
-      </View>
-    </View>
+      <GoalPeriodDifferenceCard
+        goal={goal}
+        summary={rollingSummary}
+        isLoading={isRollingSummaryLoading}
+        periodCounts={rollingPeriodCounts}
+        selectedPeriodCount={selectedRollingPeriodCount}
+        countEmptyPeriods={countEmptyRollingPeriods}
+        onCountEmptyPeriodsChange={onCountEmptyRollingPeriodsChange}
+        onSelectPeriodCount={onRollingPeriodCountChange}
+      />
+    </ScrollView>
   );
 }
-
-/**
- * Quick Add Button (reuses logic from GoalCard)
- */
-import { useGoalActions } from "../../hooks/useGoalActions";
 
 function QuickAddButton({ value, goalId }: { value: number; goalId: string }) {
   const { addEntry } = useGoalActions();

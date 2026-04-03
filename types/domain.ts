@@ -4,6 +4,8 @@
  */
 
 export type ResetUnit = "day" | "week" | "month" | "none";
+export type RollingWindowUnit = Exclude<ResetUnit, "none">;
+export type GoalType = "counter" | "measurement";
 
 export type GoalStatus = "active" | "archived";
 
@@ -17,12 +19,15 @@ export type GoalStatus = "active" | "archived";
 export interface Goal {
   id: string;
   title: string;
+  type?: GoalType | null;
   unit: string | null;
   target: number | null;
 
   // Reset configuration (nullable in schema due to defaults without notNull)
   resetValue: number | null;
   resetUnit: ResetUnit | null;
+  rollingWindowValue?: number | null;
+  rollingWindowUnit?: RollingWindowUnit | null;
 
   // Quick add button values
   quickAdd1: number;

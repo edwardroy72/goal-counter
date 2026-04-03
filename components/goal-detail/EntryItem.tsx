@@ -13,6 +13,7 @@ import type { NormalizedEntry } from "../../hooks/useGoalEntries";
 interface EntryItemProps {
   entry: NormalizedEntry;
   unit?: string | null;
+  showSign?: boolean;
   onEdit: (entry: NormalizedEntry) => void;
   onDelete: (entry: NormalizedEntry) => void;
 }
@@ -28,7 +29,13 @@ function formatTime(date: Date): string {
   });
 }
 
-export function EntryItem({ entry, unit, onEdit, onDelete }: EntryItemProps) {
+export function EntryItem({
+  entry,
+  unit,
+  showSign = true,
+  onEdit,
+  onDelete,
+}: EntryItemProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,7 +79,8 @@ export function EntryItem({ entry, unit, onEdit, onDelete }: EntryItemProps) {
 
       {/* Amount */}
       <Text className="font-bold text-lg dark:text-white min-w-[60px]">
-        +{entry.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+        {showSign && entry.amount >= 0 ? "+" : ""}
+        {entry.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
         {unit && (
           <Text className="text-zinc-400 text-sm font-normal"> {unit}</Text>
         )}

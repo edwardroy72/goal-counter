@@ -9,9 +9,10 @@
  * - Handles edge cases (no entries, lifetime goals, etc.)
  */
 
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { db } from "../../db/client";
 import { queryCache } from "../../db/query-cache";
+import { useGoalHistory } from "../../hooks/useGoalHistory";
 import type { Goal } from "../../types/domain";
 
 // Mock the settings context
@@ -28,7 +29,8 @@ jest.mock("../../db/client", () => ({
     select: jest.fn().mockReturnThis(),
     from: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
-    orderBy: jest.fn().mockResolvedValue([]),
+    orderBy: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockResolvedValue([]),
   },
 }));
 
@@ -39,9 +41,6 @@ jest.mock("../../db/query-cache", () => ({
     invalidate: jest.fn(),
   },
 }));
-
-// Need to import after mocks are set up
-import { useGoalHistory } from "../../hooks/useGoalHistory";
 
 const createMockGoal = (overrides: Partial<Goal> = {}): Goal => ({
   id: "goal-1",
@@ -88,7 +87,7 @@ describe("useGoalHistory", () => {
   describe("Loading State", () => {
     it("should start in loading state", () => {
       const goal = createMockGoal();
-      (db.orderBy as jest.Mock).mockImplementation(
+      (db.limit as jest.Mock).mockImplementation(
         () => new Promise(() => {}) // Never resolves
       );
 
@@ -118,7 +117,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 5, new Date("2025-01-14T09:00:00Z"), "e3"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -143,7 +142,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 5, new Date("2025-01-15T08:00:00Z"), "e1"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -154,10 +153,6 @@ describe("useGoalHistory", () => {
       // Should have exactly one period
       expect(result.current.periods.length).toBe(1);
 
-      // Check if there's a current period in the results
-      const currentPeriod = result.current.periods.find(
-        (p) => p.isCurrentPeriod
-      );
       // Periods should have proper structure
       expect(result.current.periods[0]).toHaveProperty("periodLabel");
       expect(result.current.periods[0]).toHaveProperty("periodTotal");
@@ -178,7 +173,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 3, new Date("2025-01-08T10:00:00Z"), "e3"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -209,7 +204,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 3, new Date("2025-01-13T10:00:00Z"), "e3"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -243,7 +238,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 20, new Date("2025-01-20T10:00:00Z"), "e2"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -276,7 +271,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 2, new Date("2025-01-05T10:00:00Z"), "e3"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -299,7 +294,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 5, new Date("2025-01-15T08:00:00Z"), "e3"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -318,7 +313,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 3, new Date("2025-01-15T10:00:00Z"), "e3"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -341,7 +336,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 2, new Date("2025-01-14T10:00:00Z"), "e2"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -357,7 +352,7 @@ describe("useGoalHistory", () => {
   describe("Empty States", () => {
     it("should return empty periods array when no entries exist", async () => {
       const goal = createMockGoal();
-      (db.orderBy as jest.Mock).mockResolvedValueOnce([]);
+      (db.limit as jest.Mock).mockResolvedValueOnce([]);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -380,7 +375,7 @@ describe("useGoalHistory", () => {
         createMockEntry(goal.id, 3, new Date("2025-01-12T10:00:00Z"), "e2"),
       ];
 
-      (db.orderBy as jest.Mock).mockResolvedValueOnce(mockEntries);
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
 
       const { result } = renderHook(() => useGoalHistory(goal));
 
@@ -396,7 +391,7 @@ describe("useGoalHistory", () => {
   describe("Cache Subscription", () => {
     it("should subscribe to cache invalidation", () => {
       const goal = createMockGoal();
-      (db.orderBy as jest.Mock).mockResolvedValue([]);
+      (db.limit as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
       renderHook(() => useGoalHistory(goal));
 
@@ -406,12 +401,100 @@ describe("useGoalHistory", () => {
     it("should unsubscribe on unmount", () => {
       const unsubscribe = jest.fn();
       (queryCache.subscribe as jest.Mock).mockReturnValue(unsubscribe);
-      (db.orderBy as jest.Mock).mockResolvedValue([]);
+      (db.limit as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
       const { unmount } = renderHook(() => useGoalHistory(createMockGoal()));
+
       unmount();
 
       expect(unsubscribe).toHaveBeenCalled();
+    });
+  });
+
+  describe("Pagination", () => {
+    it("loads only the first history page and reports that more history exists", async () => {
+      const goal = createMockGoal({
+        resetValue: 1,
+        resetUnit: "week",
+        createdAt: new Date("2024-11-01T00:00:00Z"),
+      });
+      const firstPage = Array.from({ length: 51 }, (_, index) =>
+        createMockEntry(
+          goal.id,
+          index + 1,
+          new Date(Date.UTC(2025, 0, 31 - index, 10, 0, 0)),
+          `entry-${index + 1}`
+        )
+      );
+
+      (db.limit as jest.Mock).mockResolvedValueOnce(firstPage);
+
+      const { result } = renderHook(() => useGoalHistory(goal));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.hasMore).toBe(true);
+
+      const loadedEntryCount = result.current.periods.reduce(
+        (periodSum, period) =>
+          periodSum +
+          period.days.reduce((daySum, day) => daySum + day.entries.length, 0),
+        0
+      );
+
+      expect(loadedEntryCount).toBe(50);
+    });
+
+    it("merges older pages into the same visible day without duplicating entries", async () => {
+      const goal = createMockGoal({
+        resetValue: 1,
+        resetUnit: "week",
+        createdAt: new Date("2025-01-06T00:00:00Z"),
+      });
+      const firstPage = [
+        createMockEntry(goal.id, 5, new Date("2025-01-15T12:00:00Z"), "e1"),
+        ...Array.from({ length: 49 }, (_, index) =>
+          createMockEntry(
+            goal.id,
+            1,
+            new Date(Date.UTC(2025, 0, 14 - index, 10, 0, 0)),
+            `filler-${index + 1}`
+          )
+        ),
+        createMockEntry(goal.id, 1, new Date("2024-11-20T08:00:00Z"), "cursor"),
+      ];
+
+      (db.limit as jest.Mock)
+        .mockResolvedValueOnce(firstPage)
+        .mockResolvedValueOnce([
+          createMockEntry(goal.id, 3, new Date("2025-01-15T08:00:00Z"), "e2"),
+        ]);
+
+      const { result } = renderHook(() => useGoalHistory(goal));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.hasMore).toBe(true);
+
+      await act(async () => {
+        await result.current.loadMore();
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoadingMore).toBe(false);
+      });
+
+      expect(result.current.hasMore).toBe(false);
+      const periodWithJan15 = result.current.periods.find((period) =>
+        period.days.some((day) => day.date === "2025-01-15")
+      );
+      const jan15Day = periodWithJan15?.days.find((day) => day.date === "2025-01-15");
+
+      expect(jan15Day?.entries.map((entry) => entry.id)).toEqual(["e1", "e2"]);
     });
   });
 });

@@ -21,10 +21,13 @@ export function createMockGoal(overrides: Partial<Goal> = {}): Goal {
   return {
     id: `goal-${goalCounter}`,
     title: `Test Goal ${goalCounter}`,
+    type: "counter",
     unit: "units",
     target: 100,
     resetValue: 1,
     resetUnit: "day" as ResetUnit,
+    rollingWindowValue: null,
+    rollingWindowUnit: null,
     quickAdd1: 10,
     quickAdd2: null,
     quickAdd3: null,
