@@ -222,8 +222,22 @@ export default function Settings() {
         )}
 
         <View className="mt-8 pt-8 border-t border-zinc-800">
+          <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
+            Developer / Creator
+          </Text>
+          <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
+            <Text className="text-white text-base font-semibold">
+              Developer / Creator: Edward Roy
+            </Text>
+            <Text className="text-zinc-400 text-sm mt-2">
+              Email: edwardroy@goaltracker.com [PLACEHOLDER]
+            </Text>
+          </View>
+        </View>
+
+        <View className="mt-8 pt-8 border-t border-zinc-800">
           <Text className="text-zinc-500 text-xs text-center">
-            Goal Counter v1.0.0
+            Goal Tracker v2.0.0
           </Text>
         </View>
       </View>

@@ -158,8 +158,15 @@ export default function Dashboard() {
   return (
     <View className="flex-1 bg-zinc-50 dark:bg-zinc-950">
       <View className="flex-1 px-4 pt-20">
-        <View className="mb-8 px-2 flex-row justify-between items-center">
-          <Text className="text-4xl font-black dark:text-white">Goals</Text>
+        <View className="mb-8 px-2 flex-row justify-between items-start">
+          <View>
+            <Text className="text-4xl font-black dark:text-white">
+              Goal Tracker
+            </Text>
+            <Text className="mt-2 text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+              By Edward Roy
+            </Text>
+          </View>
           <View className="flex-row items-center gap-2">
             {(displayGoals.length > 1 || isReorderMode) && (
               <TouchableOpacity
