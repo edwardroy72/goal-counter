@@ -13,10 +13,10 @@ import { queryCache } from "../db/query-cache";
 import { entries } from "../db/schema";
 
 interface UseEntryActionsResult {
-  /** Update an entry's amount and/or note */
+  /** Update an entry's amount, note, and/or timestamp */
   updateEntry: (
     entryId: string,
-    updates: { amount?: number; note?: string | null }
+    updates: { amount?: number; note?: string | null; timestamp?: Date }
   ) => Promise<boolean>;
 
   /** Delete an entry permanently */
@@ -44,13 +44,12 @@ export function useEntryActions(): UseEntryActionsResult {
   }, []);
 
   /**
-   * Updates an entry's amount and/or note.
-   * Timestamp remains immutable per design spec.
+   * Updates an entry's amount, note, and/or timestamp.
    */
   const updateEntry = useCallback(
     async (
       entryId: string,
-      updates: { amount?: number; note?: string | null }
+      updates: { amount?: number; note?: string | null; timestamp?: Date }
     ): Promise<boolean> => {
       if (!entryId) {
         setError(new Error("Entry ID is required"));
@@ -69,17 +68,34 @@ export function useEntryActions(): UseEntryActionsResult {
         }
       }
 
+      if (updates.timestamp !== undefined) {
+        if (
+          !(updates.timestamp instanceof Date) ||
+          isNaN(updates.timestamp.getTime())
+        ) {
+          setError(new Error("Timestamp must be a valid date"));
+          return false;
+        }
+      }
+
       try {
         setIsProcessing(true);
         setError(null);
 
         // Build update object with only provided fields
-        const updateData: { amount?: number; note?: string | null } = {};
+        const updateData: {
+          amount?: number;
+          note?: string | null;
+          timestamp?: Date;
+        } = {};
         if (updates.amount !== undefined) {
           updateData.amount = updates.amount;
         }
         if (updates.note !== undefined) {
           updateData.note = updates.note;
+        }
+        if (updates.timestamp !== undefined) {
+          updateData.timestamp = updates.timestamp;
         }
 
         if (Object.keys(updateData).length === 0) {

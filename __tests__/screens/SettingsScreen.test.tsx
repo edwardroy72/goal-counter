@@ -124,4 +124,16 @@ describe("SettingsScreen", () => {
       );
     });
   });
+
+  it("launches fireworks after tapping the developer card five times", () => {
+    const { getByTestId } = render(<SettingsScreen />);
+
+    const developerContainer = getByTestId("developer-container");
+
+    for (let count = 0; count < 5; count += 1) {
+      fireEvent.press(developerContainer);
+    }
+
+    expect(getByTestId("fireworks-overlay")).toBeTruthy();
+  });
 });

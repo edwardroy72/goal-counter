@@ -194,7 +194,7 @@ export function ManualAddModal({
                   ref={noteInputRef}
                   value={note}
                   onChangeText={setNote}
-                  placeholder="What was this for?"
+                  placeholder="What was this for? (Optional)"
                   placeholderTextColor="#52525b"
                   multiline
                   numberOfLines={4}

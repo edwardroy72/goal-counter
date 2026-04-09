@@ -11,13 +11,13 @@
  */
 
 import { act, renderHook } from "@testing-library/react-native";
+import * as Haptics from "expo-haptics";
+import { queryCache } from "../../db/query-cache";
 import { useEntryActions } from "../../hooks/useEntryActions";
 
 // Mock dependencies
-const mockUpdate = jest.fn().mockReturnThis();
 const mockSet = jest.fn().mockReturnThis();
 const mockWhere = jest.fn().mockResolvedValue(undefined);
-const mockDelete = jest.fn().mockReturnThis();
 const mockDeleteWhere = jest.fn().mockResolvedValue(undefined);
 
 jest.mock("../../db/client", () => ({
@@ -42,7 +42,7 @@ jest.mock("../../db/query-cache", () => ({
 }));
 
 jest.mock("../../db/schema", () => ({
-  entries: { id: "id", amount: "amount", note: "note" },
+  entries: { id: "id", amount: "amount", note: "note", timestamp: "timestamp" },
 }));
 
 jest.mock("expo-haptics", () => ({
@@ -52,9 +52,6 @@ jest.mock("expo-haptics", () => ({
     Error: "error",
   },
 }));
-
-import * as Haptics from "expo-haptics";
-import { queryCache } from "../../db/query-cache";
 
 describe("useEntryActions", () => {
   beforeEach(() => {
@@ -107,6 +104,21 @@ describe("useEntryActions", () => {
       expect(mockSet).toHaveBeenCalledWith({ amount: 15, note: "New note" });
     });
 
+    it("should update entry timestamp successfully", async () => {
+      const { result } = renderHook(() => useEntryActions());
+      const timestamp = new Date("2026-04-08T10:30:00Z");
+
+      let success: boolean = false;
+      await act(async () => {
+        success = await result.current.updateEntry("entry-123", {
+          timestamp,
+        });
+      });
+
+      expect(success).toBe(true);
+      expect(mockSet).toHaveBeenCalledWith({ timestamp });
+    });
+
     it("should reject empty entry ID", async () => {
       const { result } = renderHook(() => useEntryActions());
 
@@ -145,6 +157,20 @@ describe("useEntryActions", () => {
 
       expect(success).toBe(false);
       expect(result.current.error?.message).toContain("greater than zero");
+    });
+
+    it("should reject invalid timestamp", async () => {
+      const { result } = renderHook(() => useEntryActions());
+
+      let success: boolean = false;
+      await act(async () => {
+        success = await result.current.updateEntry("entry-123", {
+          timestamp: new Date("invalid"),
+        });
+      });
+
+      expect(success).toBe(false);
+      expect(result.current.error?.message).toContain("valid date");
     });
 
     it("should handle database errors", async () => {

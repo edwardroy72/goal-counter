@@ -6,7 +6,7 @@
 
 import { useRouter } from "expo-router";
 import { Check, ChevronDown, X } from "lucide-react-native";
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { FireworksOverlay } from "../components/FireworksOverlay";
 import { useSettings } from "../contexts/SettingsContext";
 import { useGoalLifecycle } from "../hooks/useGoalLifecycle";
 import { useGoals } from "../hooks/useGoals";
@@ -42,7 +43,10 @@ export default function Settings() {
   const [showTimezonePicker, setShowTimezonePicker] = useState(false);
   const [timezoneQuery, setTimezoneQuery] = useState("");
   const [processingGoalId, setProcessingGoalId] = useState<string | null>(null);
+  const [fireworksSeed, setFireworksSeed] = useState<number | null>(null);
   const deferredTimezoneQuery = useDeferredValue(timezoneQuery);
+  const developerTapCountRef = useRef(0);
+  const developerTapResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const timezoneOptions = useMemo(() => getTimezoneOptions(), []);
   const currentTimezone = useMemo(
@@ -115,132 +119,176 @@ export default function Settings() {
     );
   };
 
+  useEffect(() => {
+    return () => {
+      if (developerTapResetRef.current) {
+        clearTimeout(developerTapResetRef.current);
+      }
+      developerTapCountRef.current = 0;
+    };
+  }, []);
+
+  const handleDeveloperTap = () => {
+    if (developerTapResetRef.current) {
+      clearTimeout(developerTapResetRef.current);
+    }
+
+    developerTapCountRef.current += 1;
+
+    if (developerTapCountRef.current >= 5) {
+      developerTapCountRef.current = 0;
+      setFireworksSeed(Date.now());
+      return;
+    }
+
+    developerTapResetRef.current = setTimeout(() => {
+      developerTapCountRef.current = 0;
+    }, 1800);
+
+  };
+
   return (
-    <ScrollView className="flex-1 bg-zinc-900 p-6 pt-20">
-      {/* Header */}
-      <View className="flex-row justify-between items-center mb-10">
-        <Text className="text-3xl font-bold text-white">Settings</Text>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="bg-zinc-800 p-2 rounded-full"
-        >
-          <X color="#a1a1aa" size={24} />
-        </TouchableOpacity>
-      </View>
+    <View className="flex-1 bg-zinc-900">
+      <ScrollView className="flex-1 p-6 pt-20">
+        {/* Header */}
+        <View className="flex-row justify-between items-center mb-10">
+          <Text className="text-3xl font-bold text-white">Settings</Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="bg-zinc-800 p-2 rounded-full"
+          >
+            <X color="#a1a1aa" size={24} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Timezone Section */}
-      <View className="mb-6">
-        <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-          Timezone
-        </Text>
-        <Text className="text-zinc-600 text-xs mb-3 ml-1">
-          All period resets and time calculations use this timezone
-        </Text>
-        <TouchableOpacity
-          onPress={() => {
-            setTimezoneQuery("");
-            setShowTimezonePicker(true);
-          }}
-          className="bg-zinc-800 p-5 rounded-2xl flex-row justify-between items-center border border-zinc-700/50"
-        >
-          <Text className="text-white text-lg">{currentTimezoneLabel}</Text>
-          <ChevronDown color="#71717a" size={20} />
-        </TouchableOpacity>
-      </View>
+        {/* Timezone Section */}
+        <View className="mb-6">
+          <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
+            Timezone
+          </Text>
+          <Text className="text-zinc-600 text-xs mb-3 ml-1">
+            All period resets and time calculations use this timezone
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setTimezoneQuery("");
+              setShowTimezonePicker(true);
+            }}
+            className="bg-zinc-800 p-5 rounded-2xl flex-row justify-between items-center border border-zinc-700/50"
+          >
+            <Text className="text-white text-lg">{currentTimezoneLabel}</Text>
+            <ChevronDown color="#71717a" size={20} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Archived Goals */}
-      <View className="mt-8 pt-8 border-t border-zinc-800">
-        <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-          Archived Goals
-        </Text>
-        <Text className="text-zinc-600 text-xs mb-3 ml-1">
-          Restore archived goals or permanently delete them when you no longer
-          need the history.
-        </Text>
-        {isLoadingArchivedGoals ? (
-          <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
-            <Text className="text-zinc-400">Loading archived goals...</Text>
-          </View>
-        ) : archivedGoals.length === 0 ? (
-          <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
-            <Text className="text-zinc-400">No archived goals</Text>
-          </View>
-        ) : (
-          <View className="gap-3">
-            {archivedGoals.map((goal) => {
-              const isGoalProcessing =
-                isLifecycleProcessing && processingGoalId === goal.id;
-              const isGoalUnarchiving =
-                isGoalProcessing && activeAction === "unarchive";
-              const isGoalDeleting =
-                isGoalProcessing && activeAction === "delete";
-
-              return (
-                <View
-                  key={goal.id}
-                  className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50 flex-row items-center justify-between"
-                >
-                  <View className="flex-1 pr-4">
-                    <Text className="text-white text-lg font-semibold">
-                      {goal.title}
-                    </Text>
-                    <Text className="text-zinc-500 text-sm mt-1">
-                      {goal.unit || "No unit"}
-                      {goal.target !== null ? ` • Target ${goal.target}` : ""}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-2">
-                    <TouchableOpacity
-                      onPress={() => {
-                        void handleUnarchiveGoal(goal.id);
-                      }}
-                      disabled={isLifecycleProcessing}
-                      className="bg-emerald-500/80 px-4 py-3 rounded-xl"
-                    >
-                      <Text className="text-white font-semibold">
-                        {isGoalUnarchiving ? "Unarchiving..." : "Unarchive"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleDeleteArchivedGoal(goal.id)}
-                      disabled={isLifecycleProcessing}
-                      className={`px-4 py-3 rounded-xl border ${
-                        isGoalDeleting
-                          ? "bg-red-500 border-red-500"
-                          : "bg-red-500/10 border-red-500/40"
-                      }`}
-                    >
-                      <Text className="text-white font-semibold">
-                        {isGoalDeleting ? "Deleting..." : "Delete"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
+        {/* Archived Goals */}
         <View className="mt-8 pt-8 border-t border-zinc-800">
           <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
-            Developer / Creator
+            Archived Goals
           </Text>
-          <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
-            <Text className="text-white text-base font-semibold">
-              Developer / Creator: Edward Roy
+          <Text className="text-zinc-600 text-xs mb-3 ml-1">
+            Restore archived goals or permanently delete them when you no longer
+            need the history.
+          </Text>
+          {isLoadingArchivedGoals ? (
+            <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
+              <Text className="text-zinc-400">Loading archived goals...</Text>
+            </View>
+          ) : archivedGoals.length === 0 ? (
+            <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
+              <Text className="text-zinc-400">No archived goals</Text>
+            </View>
+          ) : (
+            <View className="gap-3">
+              {archivedGoals.map((goal) => {
+                const isGoalProcessing =
+                  isLifecycleProcessing && processingGoalId === goal.id;
+                const isGoalUnarchiving =
+                  isGoalProcessing && activeAction === "unarchive";
+                const isGoalDeleting =
+                  isGoalProcessing && activeAction === "delete";
+
+                return (
+                  <View
+                    key={goal.id}
+                    className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50 flex-row items-center justify-between"
+                  >
+                    <View className="flex-1 pr-4">
+                      <Text className="text-white text-lg font-semibold">
+                        {goal.title}
+                      </Text>
+                      <Text className="text-zinc-500 text-sm mt-1">
+                        {goal.unit || "No unit"}
+                        {goal.target !== null ? ` • Target ${goal.target}` : ""}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center gap-2">
+                      <TouchableOpacity
+                        onPress={() => {
+                          void handleUnarchiveGoal(goal.id);
+                        }}
+                        disabled={isLifecycleProcessing}
+                        className="bg-emerald-500/80 px-4 py-3 rounded-xl"
+                      >
+                        <Text className="text-white font-semibold">
+                          {isGoalUnarchiving ? "Unarchiving..." : "Unarchive"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteArchivedGoal(goal.id)}
+                        disabled={isLifecycleProcessing}
+                        className={`px-4 py-3 rounded-xl border ${
+                          isGoalDeleting
+                            ? "bg-red-500 border-red-500"
+                            : "bg-red-500/10 border-red-500/40"
+                        }`}
+                      >
+                        <Text className="text-white font-semibold">
+                          {isGoalDeleting ? "Deleting..." : "Delete"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          <View className="mt-8 pt-8 border-t border-zinc-800">
+            <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
+              Developer / Creator
             </Text>
-            <Text className="text-zinc-400 text-sm mt-2">
-              Email: edwardroy@goaltracker.com [PLACEHOLDER]
+            <TouchableOpacity
+              onPress={handleDeveloperTap}
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel="Developer container"
+              testID="developer-container"
+              className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50"
+            >
+              <Text className="text-white text-base font-semibold">
+                Developer / Creator: Edward Roy
+              </Text>
+              <Text className="text-zinc-400 text-sm mt-2">
+                Email: edwardroy@goaltracker.com [PLACEHOLDER]
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View className="mt-8 pt-8 border-t border-zinc-800">
+            <Text className="text-zinc-500 text-xs text-center">
+              Goal Tracker v2.0.0
             </Text>
           </View>
         </View>
+      </ScrollView>
 
-        <View className="mt-8 pt-8 border-t border-zinc-800">
-          <Text className="text-zinc-500 text-xs text-center">
-            Goal Tracker v2.0.0
-          </Text>
-        </View>
-      </View>
+      {fireworksSeed !== null ? (
+        <FireworksOverlay
+          seed={fireworksSeed}
+          onComplete={() => setFireworksSeed(null)}
+        />
+      ) : null}
 
       {/* Timezone Picker Modal */}
       <Modal
@@ -316,6 +364,6 @@ export default function Settings() {
           />
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }

@@ -8,6 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "build:apk": "cd android && ./gradlew assembleRelease",
+    "build:apk:debug": "cd android && ./gradlew assembleDebug",
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -16,6 +18,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/datetimepicker": "^9.1.0",
     "@react-navigation/native": "^7.1.8",
     "babel-plugin-inline-import": "^3.0.0",
     "date-fns": "^4.1.0",

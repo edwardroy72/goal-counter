@@ -82,10 +82,10 @@ export function GoalPeriodDifferenceCard({
   return (
     <View className="mb-6 rounded-3xl border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80">
       <Text className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
-        Target Difference
+        Have you hit your target? 
       </Text>
       <Text className="mb-4 text-base font-semibold text-zinc-900 dark:text-zinc-100">
-        Compare your total against target across a longer time window.
+        Compare your Total vs Target across a longer time frame.
       </Text>
 
       {!isAvailable ? (
@@ -159,7 +159,7 @@ export function GoalPeriodDifferenceCard({
 
               <View className="mb-4">
                 <Text className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                  Include Skipped Days
+                  Include Skipped Days (and Days with No Entries)
                 </Text>
                 <View className="flex-row gap-2">
                   <TouchableOpacity
