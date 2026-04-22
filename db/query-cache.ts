@@ -10,7 +10,12 @@
  * - Single source of truth for invalidation
  */
 
-type InvalidationListener = () => void;
+export interface QueryCacheEvent {
+  type?: "entry-updated" | "entry-deleted" | "generic";
+  entryId?: string;
+}
+
+type InvalidationListener = (event?: QueryCacheEvent) => void;
 
 class QueryCache {
   private listeners: Set<InvalidationListener> = new Set();
@@ -30,7 +35,7 @@ class QueryCache {
   /**
    * Invalidate all queries, triggering all subscribers to refetch
    */
-  invalidate(): void {
+  invalidate(event?: QueryCacheEvent): void {
     console.log(
       "[QueryCache] Invalidating cache. Active subscribers:",
       this.listeners.size
@@ -40,7 +45,7 @@ class QueryCache {
     listenersSnapshot.forEach((listener, index) => {
       try {
         console.log("[QueryCache] Notifying subscriber", index);
-        listener();
+        listener(event);
       } catch (error) {
         console.error("[QueryCache] Subscriber error:", error);
         // Continue notifying other subscribers even if one fails

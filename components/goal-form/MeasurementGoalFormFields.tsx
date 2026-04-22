@@ -50,7 +50,7 @@ export function MeasurementGoalFormFields({
           onPressIn={() => notifyInputFocus(titleSectionY.current)}
           placeholder="e.g., Body Weight"
           placeholderTextColor="#52525b"
-          className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+          className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50"
         />
       </View>
 
@@ -72,7 +72,7 @@ export function MeasurementGoalFormFields({
             keyboardType="decimal-pad"
             placeholder="e.g. 70"
             placeholderTextColor="#52525b"
-            className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+            className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50"
           />
         </View>
         <View className="flex-1">
@@ -86,7 +86,7 @@ export function MeasurementGoalFormFields({
             onPressIn={() => notifyInputFocus(targetSectionY.current)}
             placeholder="e.g. kg"
             placeholderTextColor="#52525b"
-            className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+            className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50"
           />
         </View>
       </View>
@@ -110,12 +110,12 @@ export function MeasurementGoalFormFields({
             keyboardType="decimal-pad"
             placeholder={unit.trim() ? `e.g. current ${unit.trim()}` : "Enter current value"}
             placeholderTextColor="#52525b"
-            className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+            className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50"
           />
         </View>
       ) : null}
 
-      <View className="bg-zinc-800/70 border border-zinc-700/50 rounded-2xl p-5">
+      <View className="bg-zinc-800/70 border border-zinc-700/50 rounded-surface p-5">
         <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">
           Measurement Goals
         </Text>

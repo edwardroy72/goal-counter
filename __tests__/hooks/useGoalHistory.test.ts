@@ -349,6 +349,46 @@ describe("useGoalHistory", () => {
     });
   });
 
+  describe("Period Labels", () => {
+    it("shows a single day label when the period begins and ends on the same day", async () => {
+      const goal = createMockGoal({ resetValue: 1, resetUnit: "day" });
+      const mockEntries = [
+        createMockEntry(goal.id, 5, new Date("2025-01-15T08:00:00Z"), "e1"),
+      ];
+
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
+
+      const { result } = renderHook(() => useGoalHistory(goal));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.periods[0]?.periodLabel).toBe("Jan 15");
+    });
+
+    it("shows the inclusive last counted day for multi-day periods", async () => {
+      const goal = createMockGoal({
+        resetValue: 2,
+        resetUnit: "day",
+        createdAt: new Date("2025-01-10T00:00:00Z"),
+      });
+      const mockEntries = [
+        createMockEntry(goal.id, 5, new Date("2025-01-15T08:00:00Z"), "e1"),
+      ];
+
+      (db.limit as jest.Mock).mockResolvedValueOnce(mockEntries);
+
+      const { result } = renderHook(() => useGoalHistory(goal));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.periods[0]?.periodLabel).toBe("Jan 14 – Jan 15");
+    });
+  });
+
   describe("Empty States", () => {
     it("should return empty periods array when no entries exist", async () => {
       const goal = createMockGoal();
@@ -495,6 +535,58 @@ describe("useGoalHistory", () => {
       const jan15Day = periodWithJan15?.days.find((day) => day.date === "2025-01-15");
 
       expect(jan15Day?.entries.map((entry) => entry.id)).toEqual(["e1", "e2"]);
+    });
+
+    it("keeps an edited entry visible after cache invalidation even when it falls outside the first page", async () => {
+      const goal = createMockGoal({
+        resetValue: 1,
+        resetUnit: "week",
+        createdAt: new Date("2024-11-01T00:00:00Z"),
+      });
+      const firstPage = Array.from({ length: 50 }, (_, index) =>
+        createMockEntry(
+          goal.id,
+          index + 1,
+          new Date(Date.UTC(2025, 0, 31 - index, 10, 0, 0)),
+          `entry-${index + 1}`
+        )
+      );
+      const editedEntry = createMockEntry(
+        goal.id,
+        7,
+        new Date("2024-12-01T10:00:00Z"),
+        "edited-entry"
+      );
+
+      (db.limit as jest.Mock)
+        .mockResolvedValueOnce(firstPage)
+        .mockResolvedValueOnce(firstPage)
+        .mockResolvedValueOnce([editedEntry]);
+
+      const { result } = renderHook(() => useGoalHistory(goal));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const cacheListener = (queryCache.subscribe as jest.Mock).mock.calls[0]?.[0];
+
+      expect(cacheListener).toEqual(expect.any(Function));
+
+      await act(async () => {
+        cacheListener?.({
+          type: "entry-updated",
+          entryId: "edited-entry",
+        });
+      });
+
+      await waitFor(() => {
+        const visibleEntryIds = result.current.periods.flatMap((period) =>
+          period.days.flatMap((day) => day.entries.map((entry) => entry.id))
+        );
+
+        expect(visibleEntryIds).toContain("edited-entry");
+      });
     });
   });
 });

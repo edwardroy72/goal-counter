@@ -82,6 +82,22 @@ describe("QueryCache", () => {
       expect(listener3).toHaveBeenCalledTimes(1);
     });
 
+    it("should pass invalidation metadata to listeners", () => {
+      const listener = jest.fn();
+
+      queryCache.subscribe(listener);
+
+      queryCache.invalidate({
+        type: "entry-updated",
+        entryId: "entry-123",
+      });
+
+      expect(listener).toHaveBeenCalledWith({
+        type: "entry-updated",
+        entryId: "entry-123",
+      });
+    });
+
     it("should not notify unsubscribed listeners", () => {
       const listener1 = jest.fn();
       const listener2 = jest.fn();

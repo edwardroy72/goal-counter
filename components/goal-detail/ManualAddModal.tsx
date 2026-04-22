@@ -112,7 +112,7 @@ export function ManualAddModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 bg-zinc-900"
+        className="flex-1 bg-app-dark-base"
       >
         <View className="flex-1 p-6 pt-12">
           {/* Header */}
@@ -120,7 +120,7 @@ export function ManualAddModal({
             <TouchableOpacity
               onPress={handleBack}
               accessibilityLabel={step === "note" ? "Go back" : "Close"}
-              className="bg-zinc-800 p-2 rounded-full"
+              className="bg-zinc-800 p-2 rounded-surface"
             >
               <X color="#a1a1aa" size={24} />
             </TouchableOpacity>
@@ -173,7 +173,7 @@ export function ManualAddModal({
               {/* Continue Button */}
               <TouchableOpacity
                 onPress={handleContinue}
-                className="bg-blue-600 py-4 rounded-xl items-center flex-row justify-center"
+                className="bg-blue-600 py-4 rounded-surface items-center flex-row justify-center"
               >
                 <Text className="text-white font-bold text-lg">Continue</Text>
               </TouchableOpacity>
@@ -185,7 +185,7 @@ export function ManualAddModal({
                 <Text className="text-zinc-500 text-center text-sm mb-4">
                   Add a note (optional)
                 </Text>
-                <View className="bg-zinc-800 rounded-xl p-4 mb-4">
+                <View className="bg-zinc-800 rounded-surface p-4 mb-4">
                   <Text className="text-zinc-400 text-sm mb-2">
                     Amount: {amount} {goal.unit || ""}
                   </Text>
@@ -198,7 +198,7 @@ export function ManualAddModal({
                   placeholderTextColor="#52525b"
                   multiline
                   numberOfLines={4}
-                  className="bg-zinc-800 p-4 rounded-xl text-white text-lg border border-zinc-700/50 min-h-[120px]"
+                  className="bg-zinc-800 p-4 rounded-surface text-white text-lg border border-zinc-700/50 min-h-[120px]"
                   textAlignVertical="top"
                 />
               </View>
@@ -207,7 +207,7 @@ export function ManualAddModal({
               <TouchableOpacity
                 onPress={handleSave}
                 disabled={isSaving}
-                className={`py-4 rounded-xl items-center flex-row justify-center ${
+                className={`py-4 rounded-surface items-center flex-row justify-center ${
                   isSaving ? "bg-green-600/50" : "bg-green-600"
                 }`}
               >

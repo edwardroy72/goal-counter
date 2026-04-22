@@ -14,6 +14,8 @@ interface EntryItemProps {
   entry: NormalizedEntry;
   unit?: string | null;
   showSign?: boolean;
+  grouped?: boolean;
+  isLastInGroup?: boolean;
   onEdit: (entry: NormalizedEntry) => void;
   onDelete: (entry: NormalizedEntry) => void;
 }
@@ -33,6 +35,8 @@ export function EntryItem({
   entry,
   unit,
   showSign = true,
+  grouped = false,
+  isLastInGroup = false,
   onEdit,
   onDelete,
 }: EntryItemProps) {
@@ -67,8 +71,16 @@ export function EntryItem({
     }
   }, [confirmingDelete, entry, onDelete]);
 
+  const containerClassName = grouped
+    ? `flex-row items-center bg-white px-4 py-3 dark:bg-app-dark-surface ${
+        isLastInGroup
+          ? ""
+          : "border-b border-zinc-100 dark:border-zinc-800"
+      }`
+    : "mb-2 flex-row items-center rounded-surface border border-zinc-100 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-app-dark-surface";
+
   return (
-    <View className="flex-row items-center py-3 px-4 bg-white dark:bg-zinc-900 rounded-xl mb-2 border border-zinc-100 dark:border-zinc-800">
+    <View className={containerClassName}>
       {/* Time */}
       <Text className="text-zinc-400 dark:text-zinc-500 font-mono text-sm w-14">
         {formatTime(entry.timestamp)}
@@ -110,7 +122,7 @@ export function EntryItem({
             confirmingDelete ? "Confirm delete" : "Delete entry"
           }
           accessibilityRole="button"
-          className={`p-2 rounded-lg ${confirmingDelete ? "bg-red-500" : ""}`}
+          className={`p-2 rounded-surface ${confirmingDelete ? "bg-red-500" : ""}`}
         >
           {confirmingDelete ? (
             <Check size={18} color="#ffffff" />

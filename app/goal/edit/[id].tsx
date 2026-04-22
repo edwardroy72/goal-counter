@@ -219,7 +219,7 @@ export default function EditGoal() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-zinc-900 items-center justify-center">
+      <View className="flex-1 bg-app-dark-base items-center justify-center">
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
@@ -227,7 +227,7 @@ export default function EditGoal() {
 
   if (error || !goal) {
     return (
-      <View className="flex-1 bg-zinc-900 pt-20 px-6">
+      <View className="flex-1 bg-app-dark-base pt-20 px-6">
         <Text className="text-red-500 text-center text-lg">Goal not found</Text>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -247,12 +247,12 @@ export default function EditGoal() {
   const isDeletePending = activeAction === "delete";
 
   return (
-    <ScrollView className="flex-1 bg-zinc-900 p-6 pt-20">
+    <ScrollView className="flex-1 bg-app-dark-base p-6 pt-20">
       <View className="flex-row justify-between items-center mb-10">
         <Text className="text-3xl font-bold text-white">Edit Goal</Text>
         <TouchableOpacity
           onPress={() => router.back()}
-          className="bg-zinc-800 p-2 rounded-full"
+          className="bg-zinc-800 p-2 rounded-surface"
         >
           <X color="#a1a1aa" size={24} />
         </TouchableOpacity>
@@ -262,7 +262,7 @@ export default function EditGoal() {
         <Text className="text-zinc-500 font-bold text-xs uppercase mb-2 ml-1">
           Goal Type
         </Text>
-        <View className="bg-zinc-800 border border-zinc-700/50 rounded-2xl px-5 py-4">
+        <View className="bg-zinc-800 border border-zinc-700/50 rounded-surface px-5 py-4">
           <Text className="text-white text-base font-semibold">
             {isMeasurementGoal ? "Measurement" : "Counter"}
           </Text>
@@ -311,7 +311,7 @@ export default function EditGoal() {
         onPress={handleSave}
         disabled={isSaving || isLifecycleProcessing}
         activeOpacity={0.8}
-        className={`p-5 rounded-3xl mt-6 shadow-lg ${
+        className={`p-5 rounded-surface mt-6 shadow-lg ${
           isSaving ? "bg-blue-800" : "bg-blue-600"
         }`}
       >
@@ -320,48 +320,50 @@ export default function EditGoal() {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={handleDuplicate}
-        disabled={isSaving || isLifecycleProcessing}
-        activeOpacity={0.8}
-        className={`p-5 rounded-3xl mt-4 border ${
-          isDuplicatePending
-            ? "bg-zinc-700 border-zinc-600"
-            : "bg-zinc-800 border-zinc-700"
-        }`}
-      >
-        <Text className="text-white text-center font-bold text-lg">
-          {isDuplicatePending ? "Duplicating..." : "Duplicate Goal"}
-        </Text>
-      </TouchableOpacity>
+      <View className="mt-4 flex-row gap-4">
+        <TouchableOpacity
+          onPress={handleDuplicate}
+          disabled={isSaving || isLifecycleProcessing}
+          activeOpacity={0.8}
+          className={`flex-1 p-5 rounded-surface border ${
+            isDuplicatePending
+              ? "bg-zinc-700 border-zinc-600"
+              : "bg-zinc-800 border-zinc-700"
+          }`}
+        >
+          <Text className="text-white text-center font-bold text-lg">
+            {isDuplicatePending ? "Duplicating..." : "Duplicate"}
+          </Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        onPress={handleArchiveToggle}
-        disabled={isSaving || isLifecycleProcessing}
-        activeOpacity={0.8}
-        className={`p-5 rounded-3xl mt-4 ${
-          isArchived
-            ? "bg-emerald-500/70 border border-emerald-500/30"
-            : "bg-amber-500/70 border border-amber-500/30"
-        }`}
-      >
-        <Text className="text-center font-bold text-lg text-white">
-          {isArchivePending
-            ? isArchived
-              ? "Unarchiving..."
-              : "Archiving..."
-            : isArchived
-              ? "Unarchive Goal"
-              : "Archive Goal"}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleArchiveToggle}
+          disabled={isSaving || isLifecycleProcessing}
+          activeOpacity={0.8}
+          className={`flex-1 p-5 rounded-surface border ${
+            isArchivePending
+              ? "bg-zinc-700 border-zinc-600"
+              : "bg-zinc-800 border-zinc-700"
+          }`}
+        >
+          <Text className="text-center font-bold text-lg text-white">
+            {isArchivePending
+              ? isArchived
+                ? "Unarchiving..."
+                : "Archiving..."
+              : isArchived
+                ? "Unarchive"
+                : "Archive"}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Delete Button */}
       <TouchableOpacity
         onPress={handleDelete}
         disabled={isSaving || isLifecycleProcessing}
         activeOpacity={0.8}
-        className={`p-5 rounded-3xl mt-4 ${
+        className={`p-5 rounded-surface mt-4 ${
           confirmingDelete
             ? "bg-red-500"
             : "bg-red-500/70 border border-red-500/30"

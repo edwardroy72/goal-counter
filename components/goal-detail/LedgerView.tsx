@@ -38,7 +38,7 @@ export function LedgerView({
           No entries yet
         </Text>
         <Text className="text-zinc-500 text-center text-sm mt-2">
-          Use Quick Add or Manual Add to log your first entry
+          Use quick log or Quick Add to log your first entry
         </Text>
       </View>
     );
@@ -64,7 +64,7 @@ export function LedgerView({
         />
       )}
       renderSectionHeader={({ section }) => (
-        <View className="flex-row justify-between items-center py-2 px-1 bg-zinc-50 dark:bg-zinc-950">
+        <View className="flex-row justify-between items-center py-2 px-1 bg-zinc-50 dark:bg-app-dark-base">
           <Text className="text-zinc-500 dark:text-zinc-400 font-bold text-xs uppercase tracking-widest">
             {section.title}
           </Text>

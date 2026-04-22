@@ -1,6 +1,14 @@
 import { Plus } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useToast } from "../../contexts/ToastContext";
 import { useGoalActions } from "../../hooks/useGoalActions";
 import type { Goal } from "../../types/domain";
@@ -62,9 +70,11 @@ export function MeasurementTrackingView({
     <ScrollView
       className="flex-1"
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
       contentContainerStyle={{ paddingBottom: 100 }}
     >
-      <View className="rounded-3xl border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80 mb-6">
+      <View className="rounded-surface border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-app-dark-surface mb-6">
         <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">
           Quick Log
         </Text>
@@ -83,14 +93,14 @@ export function MeasurementTrackingView({
             }}
             placeholder={goal.unit ?? "Value"}
             placeholderTextColor="#71717a"
-            className="flex-1 bg-zinc-100 dark:bg-zinc-800 py-4 px-4 rounded-2xl text-zinc-900 dark:text-white text-lg border border-zinc-200/50 dark:border-zinc-700/50"
+            className="flex-1 bg-zinc-100 dark:bg-zinc-800 py-4 px-4 rounded-surface text-zinc-900 dark:text-white text-lg border border-zinc-200/50 dark:border-zinc-700/50"
           />
           <TouchableOpacity
             onPress={() => {
               void handleLogMeasurement();
             }}
             disabled={isSaving || !canLogMeasurement}
-            className={`py-4 px-5 rounded-2xl flex-row items-center justify-center ${
+            className={`py-4 px-5 rounded-surface flex-row items-center justify-center ${
               isSaving || !canLogMeasurement ? "bg-blue-600/50" : "bg-blue-600"
             }`}
           >

@@ -15,7 +15,6 @@ import {
   EntryEditModal,
   GoalDetailHeader,
   GoalSummaryCard,
-  ManualAddModal,
   MeasurementTrackingView,
   TabBar,
   type TabId,
@@ -51,7 +50,6 @@ export default function GoalDetail() {
   const [editingEntry, setEditingEntry] = useState<NormalizedEntry | null>(
     null
   );
-  const [showManualAdd, setShowManualAdd] = useState(false);
 
   // Data fetching hooks
   const {
@@ -145,14 +143,6 @@ export default function GoalDetail() {
     setEditingEntry(null);
   }, []);
 
-  const handleOpenManualAdd = useCallback(() => {
-    setShowManualAdd(true);
-  }, []);
-
-  const handleCloseManualAdd = useCallback(() => {
-    setShowManualAdd(false);
-  }, []);
-
   const currentValue = isMeasurementGoal
     ? latestEntry?.amount ?? null
     : currentTotal;
@@ -160,7 +150,7 @@ export default function GoalDetail() {
   // Loading state
   if (isLoadingGoal) {
     return (
-      <View className="flex-1 bg-zinc-50 dark:bg-zinc-950 items-center justify-center">
+      <View className="flex-1 bg-zinc-50 dark:bg-app-dark-base items-center justify-center">
         <ActivityIndicator size="large" color="#3b82f6" />
         <Text className="text-zinc-400 mt-4">Loading goal...</Text>
       </View>
@@ -170,7 +160,7 @@ export default function GoalDetail() {
   // Error state
   if (goalError || !goal) {
     return (
-      <View className="flex-1 bg-zinc-50 dark:bg-zinc-950 pt-20 px-6">
+      <View className="flex-1 bg-zinc-50 dark:bg-app-dark-base pt-20 px-6">
         <GoalDetailHeader title="Error" />
         <View className="flex-1 items-center justify-center">
           <Text className="text-red-500 text-center text-lg">
@@ -182,7 +172,7 @@ export default function GoalDetail() {
   }
 
   return (
-    <View className="flex-1 bg-zinc-50 dark:bg-zinc-950 pt-20 px-4">
+    <View className="flex-1 bg-zinc-50 dark:bg-app-dark-base pt-20 px-4">
       {/* Header */}
       <GoalDetailHeader title={goal.title} unit={goal.unit} goalId={goal.id} />
 
@@ -211,7 +201,6 @@ export default function GoalDetail() {
         ) : (
           <CurrentPeriodView
             goal={goal}
-            onManualAdd={handleOpenManualAdd}
             graph={graph}
             graphRange={graphRange}
             isGraphLoading={isLoadingGraph}
@@ -249,15 +238,6 @@ export default function GoalDetail() {
         unit={goal.unit}
         onClose={handleCloseEditModal}
       />
-
-      {/* Manual Add Modal */}
-      {!isMeasurementGoal ? (
-        <ManualAddModal
-          visible={showManualAdd}
-          goal={goal}
-          onClose={handleCloseManualAdd}
-        />
-      ) : null}
     </View>
   );
 }

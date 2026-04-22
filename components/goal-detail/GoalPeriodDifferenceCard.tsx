@@ -80,7 +80,7 @@ export function GoalPeriodDifferenceCard({
     goal.target !== null && resetUnit !== "none" && periodCounts.length > 0;
 
   return (
-    <View className="mb-6 rounded-3xl border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+    <View className="mb-6 rounded-surface border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-app-dark-surface">
       <Text className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
         Have you hit your target? 
       </Text>
@@ -104,7 +104,7 @@ export function GoalPeriodDifferenceCard({
                   onPress={() => onSelectPeriodCount(periodCount)}
                   accessibilityRole="button"
                   accessibilityLabel={`Show target difference for ${getChipLabel(goal, periodCount)}`}
-                  className={`rounded-full border px-4 py-2 ${
+                  className={`rounded-surface border px-4 py-2 ${
                     isSelected
                       ? "border-blue-500 bg-blue-600"
                       : "border-zinc-200/70 bg-zinc-100 dark:border-zinc-700/60 dark:bg-zinc-800"
@@ -139,7 +139,7 @@ export function GoalPeriodDifferenceCard({
               </Text>
 
               <View className="mb-5 flex-row gap-3">
-                <View className="flex-1 rounded-2xl bg-zinc-100 px-4 py-3 dark:bg-zinc-800/80">
+                <View className="flex-1 rounded-surface bg-zinc-100 px-4 py-3 dark:bg-zinc-800/80">
                   <Text className="mb-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                     Actual
                   </Text>
@@ -147,7 +147,7 @@ export function GoalPeriodDifferenceCard({
                     {formatValue(summary.actualTotal, goal.unit)}
                   </Text>
                 </View>
-                <View className="flex-1 rounded-2xl bg-zinc-100 px-4 py-3 dark:bg-zinc-800/80">
+                <View className="flex-1 rounded-surface bg-zinc-100 px-4 py-3 dark:bg-zinc-800/80">
                   <Text className="mb-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                     Target
                   </Text>
@@ -166,7 +166,7 @@ export function GoalPeriodDifferenceCard({
                     onPress={() => onCountEmptyPeriodsChange(true)}
                     accessibilityRole="button"
                     accessibilityLabel="Include periods with no entries"
-                    className={`flex-1 rounded-2xl border px-4 py-3 ${
+                    className={`flex-1 rounded-surface border px-4 py-3 ${
                       countEmptyPeriods
                         ? "border-blue-500 bg-blue-600"
                         : "border-zinc-200/70 bg-zinc-100 dark:border-zinc-700/60 dark:bg-zinc-800"
@@ -184,7 +184,7 @@ export function GoalPeriodDifferenceCard({
                     onPress={() => onCountEmptyPeriodsChange(false)}
                     accessibilityRole="button"
                     accessibilityLabel="Exclude periods with no entries"
-                    className={`flex-1 rounded-2xl border px-4 py-3 ${
+                    className={`flex-1 rounded-surface border px-4 py-3 ${
                       !countEmptyPeriods
                         ? "border-blue-500 bg-blue-600"
                         : "border-zinc-200/70 bg-zinc-100 dark:border-zinc-700/60 dark:bg-zinc-800"

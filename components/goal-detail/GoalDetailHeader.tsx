@@ -27,7 +27,7 @@ export function GoalDetailHeader({
         onPress={() => router.back()}
         accessibilityLabel="Go back"
         accessibilityRole="button"
-        className="bg-zinc-200 dark:bg-zinc-800 p-2 rounded-full mr-4"
+        className="bg-zinc-200 dark:bg-zinc-800 p-2 rounded-surface mr-4"
       >
         <ChevronLeft color="#a1a1aa" size={24} />
       </TouchableOpacity>
@@ -46,7 +46,7 @@ export function GoalDetailHeader({
           onPress={() => router.push(`/goal/edit/${goalId}`)}
           accessibilityLabel="Edit goal"
           accessibilityRole="button"
-          className="bg-zinc-200 dark:bg-zinc-800 p-2 rounded-full"
+          className="bg-zinc-200 dark:bg-zinc-800 p-2 rounded-surface"
         >
           <Pencil color="#a1a1aa" size={20} />
         </TouchableOpacity>

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Goal Tracker Pro",
     "slug": "goal-tracker-pro",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
     "scheme": "goaltrackerpro",
@@ -12,8 +12,9 @@
       "supportsTablet": true
     },
     "android": {
+      "icon": "./assets/images/app-icon.png",
       "adaptiveIcon": {
-        "backgroundColor": "#000000",
+        "backgroundColor": "#181717",
         "foregroundImage": "./assets/images/adaptive-foreground.png"
       },
       "edgeToEdgeEnabled": true,

@@ -25,7 +25,7 @@ interface TabBarProps {
 
 export function TabBar({ activeTab, onTabChange }: TabBarProps) {
   return (
-    <View className="flex-row bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-1 mb-4">
+    <View className="flex-row bg-zinc-100 dark:bg-zinc-800 rounded-surface p-1 mb-4">
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -34,7 +34,7 @@ export function TabBar({ activeTab, onTabChange }: TabBarProps) {
             onPress={() => onTabChange(tab.id)}
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
-            className={`flex-1 py-3 rounded-xl ${
+            className={`flex-1 py-3 rounded-surface ${
               isActive ? "bg-white dark:bg-zinc-700" : ""
             }`}
           >

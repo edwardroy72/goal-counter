@@ -179,7 +179,7 @@ export function GoalGraphCard({
       : null;
 
   return (
-    <View className="rounded-3xl border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/80 mb-6">
+    <View className="rounded-surface border border-zinc-200/80 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-app-dark-surface mb-6">
       <View className="flex-row items-start justify-between mb-4">
         <View>
           <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-1">
@@ -204,7 +204,7 @@ export function GoalGraphCard({
               accessibilityRole="button"
               accessibilityLabel={getRangeAccessibilityLabel(option)}
               onPress={() => onRangeChange(option)}
-              className={`px-3 py-2 rounded-full border ${
+              className={`px-3 py-2 rounded-surface border ${
                 isActive
                   ? "bg-blue-600 border-blue-600"
                   : "bg-zinc-100 border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700"
@@ -223,11 +223,11 @@ export function GoalGraphCard({
       </View>
 
       {isLoading ? (
-        <View className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-700 py-10 items-center">
+        <View className="rounded-surface border border-dashed border-zinc-200 dark:border-zinc-700 py-10 items-center">
           <Text className="text-zinc-400">Loading graph...</Text>
         </View>
       ) : !graph || !hasGraphData ? (
-        <View className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-700 py-10 items-center">
+        <View className="rounded-surface border border-dashed border-zinc-200 dark:border-zinc-700 py-10 items-center">
           <Text className="text-zinc-400">
             {goalType === "measurement"
               ? "No measurements yet."
@@ -237,7 +237,7 @@ export function GoalGraphCard({
       ) : (
         <>
           <View
-            className="relative overflow-hidden rounded-2xl bg-zinc-50 dark:bg-zinc-950"
+            className="relative overflow-hidden rounded-surface bg-zinc-50 dark:bg-app-dark-base"
             style={{ aspectRatio: WIDTH / HEIGHT }}
           >
             <Svg

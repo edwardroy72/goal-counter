@@ -6,7 +6,7 @@ const basePeriods: PeriodGroup[] = [
   {
     periodStart: new Date("2026-04-01T00:00:00.000Z"),
     periodEnd: new Date("2026-04-02T00:00:00.000Z"),
-    periodLabel: "Current Period",
+    periodLabel: "Apr 1",
     isCurrentPeriod: true,
     periodTotal: 750,
     days: [
@@ -50,9 +50,12 @@ describe("HistoryLedgerView", () => {
       />
     );
 
-    expect(view.getByText("Current Period")).toBeTruthy();
+    expect(view.getByText("Apr 1")).toBeTruthy();
     expect(view.getByText("Morning session")).toBeTruthy();
     expect(view.getByText("Evening session")).toBeTruthy();
+    expect(
+      view.getByTestId("history-day-group-2026-04-01").props.className
+    ).toContain("rounded-history-entry");
     expect(view.queryByText("Progress Graph")).toBeNull();
   });
 

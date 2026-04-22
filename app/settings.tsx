@@ -148,14 +148,14 @@ export default function Settings() {
   };
 
   return (
-    <View className="flex-1 bg-zinc-900">
+    <View className="flex-1 bg-app-dark-base">
       <ScrollView className="flex-1 p-6 pt-20">
         {/* Header */}
         <View className="flex-row justify-between items-center mb-10">
           <Text className="text-3xl font-bold text-white">Settings</Text>
           <TouchableOpacity
             onPress={() => router.back()}
-            className="bg-zinc-800 p-2 rounded-full"
+            className="bg-zinc-800 p-2 rounded-surface"
           >
             <X color="#a1a1aa" size={24} />
           </TouchableOpacity>
@@ -174,7 +174,7 @@ export default function Settings() {
               setTimezoneQuery("");
               setShowTimezonePicker(true);
             }}
-            className="bg-zinc-800 p-5 rounded-2xl flex-row justify-between items-center border border-zinc-700/50"
+            className="bg-zinc-800 p-5 rounded-surface flex-row justify-between items-center border border-zinc-700/50"
           >
             <Text className="text-white text-lg">{currentTimezoneLabel}</Text>
             <ChevronDown color="#71717a" size={20} />
@@ -191,11 +191,11 @@ export default function Settings() {
             need the history.
           </Text>
           {isLoadingArchivedGoals ? (
-            <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
+            <View className="bg-zinc-800 p-5 rounded-surface border border-zinc-700/50">
               <Text className="text-zinc-400">Loading archived goals...</Text>
             </View>
           ) : archivedGoals.length === 0 ? (
-            <View className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50">
+            <View className="bg-zinc-800 p-5 rounded-surface border border-zinc-700/50">
               <Text className="text-zinc-400">No archived goals</Text>
             </View>
           ) : (
@@ -211,7 +211,7 @@ export default function Settings() {
                 return (
                   <View
                     key={goal.id}
-                    className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50 flex-row items-center justify-between"
+                    className="bg-zinc-800 p-5 rounded-surface border border-zinc-700/50 flex-row items-center justify-between"
                   >
                     <View className="flex-1 pr-4">
                       <Text className="text-white text-lg font-semibold">
@@ -228,7 +228,7 @@ export default function Settings() {
                           void handleUnarchiveGoal(goal.id);
                         }}
                         disabled={isLifecycleProcessing}
-                        className="bg-emerald-500/80 px-4 py-3 rounded-xl"
+                        className="bg-emerald-500/80 px-4 py-3 rounded-surface"
                       >
                         <Text className="text-white font-semibold">
                           {isGoalUnarchiving ? "Unarchiving..." : "Unarchive"}
@@ -237,7 +237,7 @@ export default function Settings() {
                       <TouchableOpacity
                         onPress={() => handleDeleteArchivedGoal(goal.id)}
                         disabled={isLifecycleProcessing}
-                        className={`px-4 py-3 rounded-xl border ${
+                        className={`px-4 py-3 rounded-surface border ${
                           isGoalDeleting
                             ? "bg-red-500 border-red-500"
                             : "bg-red-500/10 border-red-500/40"
@@ -264,7 +264,7 @@ export default function Settings() {
               accessibilityRole="button"
               accessibilityLabel="Developer container"
               testID="developer-container"
-              className="bg-zinc-800 p-5 rounded-2xl border border-zinc-700/50"
+              className="bg-zinc-800 p-5 rounded-surface border border-zinc-700/50"
             >
               <Text className="text-white text-base font-semibold">
                 Developer / Creator: Edward Roy
@@ -277,7 +277,7 @@ export default function Settings() {
 
           <View className="mt-8 pt-8 border-t border-zinc-800">
             <Text className="text-zinc-500 text-xs text-center">
-              Goal Tracker v2.0.0
+              Goal Tracker v2.1.0
             </Text>
           </View>
         </View>
@@ -297,7 +297,7 @@ export default function Settings() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowTimezonePicker(false)}
       >
-        <View className="flex-1 bg-zinc-900">
+        <View className="flex-1 bg-app-dark-base">
           {/* Modal Header */}
           <View className="flex-row justify-between items-center p-6 pt-16 border-b border-zinc-800">
             <Text className="text-xl font-bold text-white">
@@ -308,7 +308,7 @@ export default function Settings() {
                 setShowTimezonePicker(false);
                 setTimezoneQuery("");
               }}
-              className="bg-zinc-800 p-2 rounded-full"
+              className="bg-zinc-800 p-2 rounded-surface"
             >
               <X color="#a1a1aa" size={20} />
             </TouchableOpacity>
@@ -322,7 +322,7 @@ export default function Settings() {
               placeholderTextColor="#71717a"
               autoCapitalize="none"
               autoCorrect={false}
-              className="bg-zinc-800 border border-zinc-700/50 rounded-2xl px-4 py-4 text-white"
+              className="bg-zinc-800 border border-zinc-700/50 rounded-surface px-4 py-4 text-white"
             />
           </View>
 

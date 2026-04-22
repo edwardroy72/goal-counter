@@ -79,7 +79,7 @@ export function GoalFormFields({
           onPressIn={() => notifyInputFocus(titleSectionY.current)}
           placeholder="e.g., Daily Water"
           placeholderTextColor="#52525b"
-          className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+          className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50"
         />
       </View>
 
@@ -101,7 +101,7 @@ export function GoalFormFields({
             keyboardType="decimal-pad"
             placeholder="e.g. 2000"
             placeholderTextColor="#52525b"
-            className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+            className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50"
           />
         </View>
         <View className="flex-1">
@@ -115,7 +115,7 @@ export function GoalFormFields({
             onPressIn={() => notifyInputFocus(targetSectionY.current)}
             placeholder="e.g. mL"
             placeholderTextColor="#52525b"
-            className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50"
+            className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50"
           />
         </View>
       </View>
@@ -139,7 +139,7 @@ export function GoalFormFields({
               keyboardType="number-pad"
               placeholder="1"
               placeholderTextColor="#52525b"
-              className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50 w-20 text-center"
+              className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50 w-20 text-center"
             />
           )}
           <View className="flex-1 flex-row flex-wrap gap-2">
@@ -147,7 +147,7 @@ export function GoalFormFields({
               <TouchableOpacity
                 key={option.value}
                 onPress={() => onResetUnitChange(option.value)}
-                className={`flex-1 min-w-[70px] py-3 px-2 rounded-xl border ${
+                className={`flex-1 min-w-[70px] py-3 px-2 rounded-surface border ${
                   resetUnit === option.value
                     ? "bg-blue-600 border-blue-500"
                     : "bg-zinc-800 border-zinc-700/50"
@@ -184,7 +184,7 @@ export function GoalFormFields({
             keyboardType="decimal-pad"
             placeholder="100*"
             placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
+            className="flex-1 bg-zinc-800 p-4 rounded-surface text-white text-lg border border-zinc-700/50 text-center"
           />
           <TextInput
             value={quickAdd2}
@@ -194,7 +194,7 @@ export function GoalFormFields({
             keyboardType="decimal-pad"
             placeholder="+"
             placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
+            className="flex-1 bg-zinc-800 p-4 rounded-surface text-white text-lg border border-zinc-700/50 text-center"
           />
           <TextInput
             value={quickAdd3}
@@ -204,7 +204,7 @@ export function GoalFormFields({
             keyboardType="decimal-pad"
             placeholder="+"
             placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
+            className="flex-1 bg-zinc-800 p-4 rounded-surface text-white text-lg border border-zinc-700/50 text-center"
           />
           <TextInput
             value={quickAdd4}
@@ -214,7 +214,7 @@ export function GoalFormFields({
             keyboardType="decimal-pad"
             placeholder="+"
             placeholderTextColor="#52525b"
-            className="flex-1 bg-zinc-800 p-4 rounded-2xl text-white text-lg border border-zinc-700/50 text-center"
+            className="flex-1 bg-zinc-800 p-4 rounded-surface text-white text-lg border border-zinc-700/50 text-center"
           />
         </View>
         <Text className="text-zinc-600 text-xs mt-2 ml-1">

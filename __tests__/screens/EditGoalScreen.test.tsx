@@ -72,7 +72,7 @@ describe("EditGoalScreen", () => {
 
     const { getByText } = render(<EditGoalScreen />);
 
-    fireEvent.press(getByText("Duplicate Goal"));
+    fireEvent.press(getByText("Duplicate"));
 
     await waitFor(() => {
       expect(mockDuplicateGoal).toHaveBeenCalledWith("goal-1");
@@ -87,7 +87,7 @@ describe("EditGoalScreen", () => {
 
     const { getByText } = render(<EditGoalScreen />);
 
-    fireEvent.press(getByText("Duplicate Goal"));
+    fireEvent.press(getByText("Duplicate"));
 
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith("Error", "Failed to duplicate goal.");

@@ -26,6 +26,7 @@ interface MeasurementSecondaryMetric {
   label: string;
   value: string;
   tone: string;
+  labelTone: string;
 }
 
 function formatValue(value: number, unit?: string | null): string {
@@ -39,16 +40,28 @@ function formatValue(value: number, unit?: string | null): string {
 /**
  * Get the color classes for remaining value based on completion percentage
  */
-function getRemainingColorClasses(remaining: number, target: number): string {
+function getRemainingToneClasses(
+  remaining: number,
+  target: number
+): { value: string; label: string } {
   const completionPercent = ((target - remaining) / target) * 100;
 
   if (completionPercent >= 100) {
-    return "text-red-500 dark:text-red-400";
+    return {
+      value: "text-red-500 dark:text-red-400",
+      label: "text-red-500/80 dark:text-red-300/80",
+    };
   }
   if (completionPercent >= 80) {
-    return "text-orange-500 dark:text-orange-400";
+    return {
+      value: "text-orange-500 dark:text-orange-400",
+      label: "text-orange-500/80 dark:text-orange-300/80",
+    };
   }
-  return "text-green-600 dark:text-green-400";
+  return {
+    value: "text-emerald-700 dark:text-emerald-400",
+    label: "text-emerald-600/80 dark:text-emerald-300/80",
+  };
 }
 
 function getMeasurementUpdatedLabel(
@@ -79,13 +92,15 @@ function getMeasurementSecondaryMetric(input: {
       label: "Target",
       value: formatValue(input.goal.target, input.goal.unit),
       tone: "text-zinc-900 dark:text-zinc-100",
+      labelTone: "text-zinc-400 dark:text-zinc-400",
     };
   }
 
   return {
     label: "To Target",
     value: formatValue(Math.abs(input.goal.target - input.currentValue), input.goal.unit),
-    tone: "text-green-600 dark:text-green-400",
+    tone: "text-emerald-600 dark:text-emerald-400",
+    labelTone: "text-emerald-600/80 dark:text-emerald-300/80",
   };
 }
 
@@ -106,12 +121,12 @@ export function GoalSummaryCard({
     });
 
     return (
-      <View className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-100 dark:border-zinc-800 mb-4">
+      <View className="bg-white dark:bg-app-dark-surface p-6 rounded-surface border border-zinc-100 dark:border-zinc-800 mb-4">
         <View className="flex-row justify-between items-center mb-4">
           <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest">
             Latest Measurement
           </Text>
-          <View className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
+          <View className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-surface">
             <Text className="text-zinc-500 dark:text-zinc-300 text-[10px] font-bold">
               {getMeasurementUpdatedLabel(lastEntryAt, settings.timezone)}
             </Text>
@@ -120,10 +135,10 @@ export function GoalSummaryCard({
 
         <View className="flex-row justify-between items-end">
           <View className="flex-1 pr-4">
-            <Text className="text-5xl font-black dark:text-white">
+            <Text className="text-5xl font-black text-blue-700 dark:text-blue-400">
               {currentValue !== null ? formatValue(currentValue, goal.unit) : "No data"}
             </Text>
-            <Text className="text-zinc-400 text-xs font-bold uppercase tracking-tighter mt-2">
+            <Text className="mt-2 text-xs font-bold uppercase tracking-tighter text-blue-600/80 dark:text-blue-300/80">
               Current
             </Text>
           </View>
@@ -133,7 +148,9 @@ export function GoalSummaryCard({
               <Text className={`text-2xl font-bold ${secondaryMetric.tone}`}>
                 {secondaryMetric.value}
               </Text>
-              <Text className="text-zinc-400 text-xs font-bold uppercase tracking-tighter mt-1">
+              <Text
+                className={`mt-1 text-xs font-bold uppercase tracking-tighter ${secondaryMetric.labelTone}`}
+              >
                 {secondaryMetric.label}
               </Text>
             </View>
@@ -160,6 +177,10 @@ export function GoalSummaryCard({
 
   // Calculate remaining (can go negative)
   const remaining = goal.target !== null ? goal.target - safeCurrentTotal : null;
+  const remainingTone =
+    goal.target !== null && remaining !== null
+      ? getRemainingToneClasses(remaining, goal.target)
+      : null;
 
   // Calculate progress percentage
   const progressPercent = goal.target
@@ -176,13 +197,13 @@ export function GoalSummaryCard({
   );
 
   return (
-    <View className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-100 dark:border-zinc-800 mb-4">
+    <View className="bg-white dark:bg-app-dark-surface p-6 rounded-surface border border-zinc-100 dark:border-zinc-800 mb-4">
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest">
           Since {periodStartDisplay}
         </Text>
         {countdown && (
-          <View className="bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-full">
+          <View className="bg-orange-100 dark:bg-orange-950/30 px-3 py-1 rounded-surface">
             <Text className="text-orange-600 dark:text-orange-400 text-[10px] font-bold">
               {countdown}
             </Text>
@@ -192,35 +213,34 @@ export function GoalSummaryCard({
 
       <View className="flex-row justify-between items-end mb-4">
         <View>
-          <Text className="text-5xl font-black dark:text-white">
+          <Text className="text-5xl font-black text-blue-700 dark:text-blue-400">
             {safeCurrentTotal.toLocaleString(undefined, {
               maximumFractionDigits: 2,
             })}
             {goal.unit && (
-              <Text className="text-zinc-400 text-2xl font-bold">
+              <Text className="text-2xl font-bold text-blue-600/80 dark:text-blue-300/80">
                 {" "}
                 {goal.unit}
               </Text>
             )}
           </Text>
-          <Text className="text-zinc-400 text-xs font-bold uppercase tracking-tighter">
+          <Text className="text-xs font-bold uppercase tracking-tighter text-blue-600/80 dark:text-blue-300/80">
             Current
           </Text>
         </View>
 
         {goal.target !== null && remaining !== null && (
           <View className="items-end">
-            <Text
-              className={`text-3xl font-bold ${getRemainingColorClasses(
-                remaining,
-                goal.target
-              )}`}
-            >
+            <Text className={`text-3xl font-bold ${remainingTone?.value ?? ""}`}>
               {remaining.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
               })}
             </Text>
-            <Text className="text-zinc-400 text-xs font-bold uppercase tracking-tighter">
+            <Text
+              className={`text-xs font-bold uppercase tracking-tighter ${
+                remainingTone?.label ?? "text-zinc-400"
+              }`}
+            >
               Remaining
             </Text>
           </View>

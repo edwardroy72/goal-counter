@@ -1,13 +1,22 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { CurrentPeriodView } from "../../components/goal-detail/CurrentPeriodView";
 import type { GoalGraphData } from "../../services/goal-analytics";
 import type { Goal } from "../../types/domain";
 
 const mockAddEntry = jest.fn();
+const mockUndoEntry = jest.fn();
+const mockShowToast = jest.fn();
 
 jest.mock("../../hooks/useGoalActions", () => ({
   useGoalActions: () => ({
     addEntry: mockAddEntry,
+    undoEntry: mockUndoEntry,
+  }),
+}));
+
+jest.mock("../../contexts/ToastContext", () => ({
+  useToast: () => ({
+    showToast: mockShowToast,
   }),
 }));
 
@@ -48,20 +57,19 @@ const baseGraph: GoalGraphData = {
 };
 
 describe("CurrentPeriodView", () => {
-  const onManualAdd = jest.fn();
   const onGraphRangeChange = jest.fn();
   const onRollingPeriodCountChange = jest.fn();
   const onCountEmptyRollingPeriodsChange = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAddEntry.mockResolvedValue("entry-1");
   });
 
   it("renders the tracking controls with the graph", () => {
     const view = render(
       <CurrentPeriodView
         goal={createGoal()}
-        onManualAdd={onManualAdd}
         graph={baseGraph}
         graphRange="7d"
         isGraphLoading={false}
@@ -88,24 +96,24 @@ describe("CurrentPeriodView", () => {
       />
     );
 
-    expect(view.getByText("Add Entries")).toBeTruthy();
-    expect(view.getByText("Manual Add")).toBeTruthy();
+    expect(view.getByText("Quick Log")).toBeTruthy();
+    expect(view.getByText("Type an amount or use a quick add preset")).toBeTruthy();
     expect(view.getByText("Quick Add")).toBeTruthy();
+    expect(view.getByPlaceholderText("mL")).toBeTruthy();
     expect(view.getByText("Progress Graph")).toBeTruthy();
-    expect(view.getByText("Target Difference")).toBeTruthy();
+    expect(view.getByText("Have you hit your target?")).toBeTruthy();
     expect(view.getByText("-4,000 mL")).toBeTruthy();
-    expect(view.getByText("Include Skipped Days")).toBeTruthy();
+    expect(view.getByText("Include Skipped Days (and Days with No Entries)")).toBeTruthy();
     expect(view.getByText("Include")).toBeTruthy();
     expect(view.getByText("Exclude")).toBeTruthy();
     expect(view.getByText("Target will be based on 7 days in this range.")).toBeTruthy();
     expect(view.queryByText("Recent Activity")).toBeNull();
   });
 
-  it("wires manual add, quick add, graph range, and missing-period actions", () => {
+  it("wires inline log, quick add, graph range, and missing-period actions", async () => {
     const view = render(
       <CurrentPeriodView
         goal={createGoal()}
-        onManualAdd={onManualAdd}
         graph={baseGraph}
         graphRange="7d"
         isGraphLoading={false}
@@ -132,14 +140,22 @@ describe("CurrentPeriodView", () => {
       />
     );
 
-    fireEvent.press(view.getByLabelText("Add entry manually"));
+    fireEvent.changeText(view.getByPlaceholderText("mL"), "300");
+    fireEvent.press(view.getByLabelText("Log manual entry"));
     fireEvent.press(view.getByLabelText("Quick add 250"));
     fireEvent.press(view.getByLabelText("Show 30 day graph"));
     fireEvent.press(view.getByLabelText("Show target difference for 30D"));
     fireEvent.press(view.getByLabelText("Include periods with no entries"));
 
-    expect(onManualAdd).toHaveBeenCalledTimes(1);
-    expect(mockAddEntry).toHaveBeenCalledWith("goal-1", 250);
+    await waitFor(() => {
+      expect(mockAddEntry).toHaveBeenNthCalledWith(1, "goal-1", 300);
+      expect(mockAddEntry).toHaveBeenNthCalledWith(2, "goal-1", 250);
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Logged 300 mL for Water",
+        })
+      );
+    });
     expect(onGraphRangeChange).toHaveBeenCalledWith("30d");
     expect(onRollingPeriodCountChange).toHaveBeenCalledWith(30);
     expect(onCountEmptyRollingPeriodsChange).toHaveBeenCalledWith(true);
@@ -149,7 +165,6 @@ describe("CurrentPeriodView", () => {
     const view = render(
       <CurrentPeriodView
         goal={createGoal()}
-        onManualAdd={onManualAdd}
         graph={null}
         graphRange="7d"
         isGraphLoading
@@ -172,7 +187,6 @@ describe("CurrentPeriodView", () => {
     const view = render(
       <CurrentPeriodView
         goal={createGoal()}
-        onManualAdd={onManualAdd}
         graph={baseGraph}
         graphRange="7d"
         isGraphLoading={false}

@@ -12,7 +12,6 @@ export { GoalGraphCard } from "./GoalGraphCard";
 export { GoalPeriodDifferenceCard } from "./GoalPeriodDifferenceCard";
 export { GoalSummaryCard } from "./GoalSummaryCard";
 export { LedgerView } from "./LedgerView";
-export { ManualAddModal } from "./ManualAddModal";
 export { MeasurementTrackingView } from "./MeasurementTrackingView";
 export { RollingWindowFields } from "./RollingWindowFields";
 export { TabBar, type TabId } from "./TabBar";

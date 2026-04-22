@@ -106,7 +106,10 @@ export function useEntryActions(): UseEntryActionsResult {
         await db.update(entries).set(updateData).where(eq(entries.id, entryId));
 
         // Invalidate cache to trigger refetch
-        queryCache.invalidate();
+        queryCache.invalidate({
+          type: "entry-updated",
+          entryId,
+        });
 
         // Success haptic
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -142,7 +145,10 @@ export function useEntryActions(): UseEntryActionsResult {
       await db.delete(entries).where(eq(entries.id, entryId));
 
       // Invalidate cache to trigger refetch
-      queryCache.invalidate();
+      queryCache.invalidate({
+        type: "entry-deleted",
+        entryId,
+      });
 
       // Success haptic
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

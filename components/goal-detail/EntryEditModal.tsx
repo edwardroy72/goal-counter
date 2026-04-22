@@ -23,6 +23,7 @@ import {
 } from "react-native";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useEntryActions } from "../../hooks/useEntryActions";
+import { useColorScheme } from "../../hooks/use-color-scheme";
 import type { NormalizedEntry } from "../../hooks/useGoalEntries";
 
 type PickerMode = "datetime" | null;
@@ -40,6 +41,8 @@ export function EntryEditModal({
   unit,
   onClose,
 }: EntryEditModalProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [amount, setAmount] = useState("");
   const [editedTimestamp, setEditedTimestamp] = useState(new Date());
   const [note, setNote] = useState("");
@@ -116,8 +119,7 @@ export function EntryEditModal({
       DateTimePickerAndroid.open({
         value: editedTimestamp,
         mode: "date",
-        design: "material",
-        title: "Choose Date",
+        display: "default",
         is24Hour: false,
         timeZoneName: settings.timezone,
         onValueChange: (_event, selectedDate) => {
@@ -132,8 +134,7 @@ export function EntryEditModal({
           DateTimePickerAndroid.open({
             value: mergedDate,
             mode: "time",
-            design: "material",
-            title: "Choose Time",
+            display: "default",
             is24Hour: false,
             timeZoneName: settings.timezone,
             onValueChange: (_timeEvent, selectedTime) => {
@@ -165,16 +166,18 @@ export function EntryEditModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 bg-zinc-900"
+        className="flex-1 bg-zinc-50 dark:bg-app-dark-base"
       >
         <View className="flex-1 p-6 pt-12">
           {/* Header */}
           <View className="flex-row justify-between items-center mb-8">
-            <Text className="text-2xl font-bold text-white">Edit Entry</Text>
+            <Text className="text-2xl font-bold text-zinc-950 dark:text-white">
+              Edit Entry
+            </Text>
             <TouchableOpacity
               onPress={onClose}
               accessibilityLabel="Close"
-              className="bg-zinc-800 p-2 rounded-full"
+              className="bg-zinc-200 p-2 rounded-surface dark:bg-zinc-800"
             >
               <X color="#a1a1aa" size={24} />
             </TouchableOpacity>
@@ -182,19 +185,19 @@ export function EntryEditModal({
 
           {/* Date & Time */}
           <View className="mb-6">
-            <Text className="text-zinc-500 font-bold text-xs uppercase mb-2">
+            <Text className="mb-2 text-xs font-bold uppercase text-zinc-500">
               Date & Time
             </Text>
             <TouchableOpacity
               onPress={openPicker}
               accessibilityRole="button"
               accessibilityLabel="Edit date and time"
-              className="rounded-xl border border-zinc-700/50 bg-zinc-800 px-4 py-4"
+              className="rounded-surface border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700/50 dark:bg-zinc-800"
             >
               <Text className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-500">
                 Tap To Change
               </Text>
-              <Text className="text-xl font-bold text-white">
+              <Text className="text-xl font-bold text-zinc-950 dark:text-white">
                 {formatDateTimeInput(editedTimestamp, settings.timezone)}
               </Text>
               <Text className="mt-2 text-sm text-zinc-500">
@@ -204,7 +207,7 @@ export function EntryEditModal({
           </View>
 
           {Platform.OS === "ios" && pickerMode ? (
-            <View className="mb-6 overflow-hidden rounded-[24px] border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900/80">
+            <View className="mb-6 overflow-hidden rounded-surface border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-app-dark-surface">
               <View className="flex-row items-center justify-between border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800">
                 <Text className="text-zinc-900 dark:text-zinc-100 font-semibold">
                   Choose Date & Time
@@ -223,6 +226,11 @@ export function EntryEditModal({
                 mode="datetime"
                 display="spinner"
                 timeZoneName={settings.timezone}
+                themeVariant={isDark ? "dark" : "light"}
+                textColor={isDark ? "#f4f4f5" : "#18181b"}
+                style={{
+                  backgroundColor: isDark ? "#1d1d20" : "#ffffff",
+                }}
                 onValueChange={handleInlinePickerChange}
               />
             </View>
@@ -230,7 +238,7 @@ export function EntryEditModal({
 
           {/* Amount */}
           <View className="mb-6">
-            <Text className="text-zinc-500 font-bold text-xs uppercase mb-2">
+            <Text className="mb-2 text-xs font-bold uppercase text-zinc-500">
               Amount {unit && `(${unit})`}
             </Text>
             <TextInput
@@ -239,14 +247,14 @@ export function EntryEditModal({
               keyboardType="decimal-pad"
               placeholder="Enter amount"
               placeholderTextColor="#52525b"
-              className="bg-zinc-800 p-4 rounded-xl text-white text-lg border border-zinc-700/50"
+              className="rounded-surface border border-zinc-200 bg-white p-4 text-lg text-zinc-950 dark:border-zinc-700/50 dark:bg-zinc-800 dark:text-white"
               autoFocus
             />
           </View>
 
           {/* Note */}
           <View className="mb-8">
-            <Text className="text-zinc-500 font-bold text-xs uppercase mb-2">
+            <Text className="mb-2 text-xs font-bold uppercase text-zinc-500">
               Note (Optional)
             </Text>
             <TextInput
@@ -256,7 +264,7 @@ export function EntryEditModal({
               placeholderTextColor="#52525b"
               multiline
               numberOfLines={3}
-              className="bg-zinc-800 p-4 rounded-xl text-white text-lg border border-zinc-700/50 min-h-[100px]"
+              className="min-h-[100px] rounded-surface border border-zinc-200 bg-white p-4 text-lg text-zinc-950 dark:border-zinc-700/50 dark:bg-zinc-800 dark:text-white"
               textAlignVertical="top"
             />
           </View>
@@ -265,7 +273,7 @@ export function EntryEditModal({
           <TouchableOpacity
             onPress={handleSave}
             disabled={isProcessing}
-            className={`py-4 rounded-xl items-center ${
+            className={`py-4 rounded-surface items-center ${
               isProcessing ? "bg-blue-600/50" : "bg-blue-600"
             }`}
           >

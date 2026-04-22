@@ -54,7 +54,7 @@ export function HistoryLedgerView({
           <Text className="text-zinc-500 text-center text-sm mt-2">
             {isMeasurementGoal
               ? "Use quick log to record your first measurement"
-              : "Use Quick Add or Manual Add to log your first entry"}
+              : "Use quick log or Quick Add to log your first entry"}
           </Text>
         </View>
         <View className="h-20" />
@@ -107,16 +107,23 @@ export function HistoryLedgerView({
               )}
 
               {/* Entries for this day */}
-              {day.entries.map((entry) => (
-                <EntryItem
-                  key={entry.id}
-                  entry={entry}
-                  unit={unit}
-                  showSign={!isMeasurementGoal}
-                  onEdit={onEditEntry}
-                  onDelete={onDeleteEntry}
-                />
-              ))}
+              <View
+                testID={`history-day-group-${day.date}`}
+                className="overflow-hidden rounded-history-entry border border-zinc-100 bg-white dark:border-zinc-800 dark:bg-app-dark-surface"
+              >
+                {day.entries.map((entry, index) => (
+                  <EntryItem
+                    key={entry.id}
+                    entry={entry}
+                    unit={unit}
+                    showSign={!isMeasurementGoal}
+                    grouped
+                    isLastInGroup={index === day.entries.length - 1}
+                    onEdit={onEditEntry}
+                    onDelete={onDeleteEntry}
+                  />
+                ))}
+              </View>
             </View>
           ))}
         </View>
@@ -129,10 +136,10 @@ export function HistoryLedgerView({
             accessibilityRole="button"
             accessibilityLabel="Load more history"
             disabled={isLoadingMore}
-            className={`py-4 rounded-2xl items-center border ${
+            className={`py-4 rounded-surface items-center border ${
               isLoadingMore
                 ? "bg-zinc-100 border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700"
-                : "bg-white border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800"
+                : "bg-white border-zinc-200 dark:bg-app-dark-surface dark:border-zinc-800"
             }`}
           >
             <Text className="text-zinc-700 dark:text-zinc-200 font-semibold">

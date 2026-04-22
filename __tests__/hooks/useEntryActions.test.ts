@@ -73,7 +73,10 @@ describe("useEntryActions", () => {
 
       expect(success).toBe(true);
       expect(mockSet).toHaveBeenCalledWith({ amount: 10 });
-      expect(queryCache.invalidate).toHaveBeenCalled();
+      expect(queryCache.invalidate).toHaveBeenCalledWith({
+        type: "entry-updated",
+        entryId: "entry-123",
+      });
       expect(Haptics.notificationAsync).toHaveBeenCalledWith("success");
     });
 
@@ -215,7 +218,10 @@ describe("useEntryActions", () => {
 
       expect(success).toBe(true);
       expect(mockDeleteWhere).toHaveBeenCalled();
-      expect(queryCache.invalidate).toHaveBeenCalled();
+      expect(queryCache.invalidate).toHaveBeenCalledWith({
+        type: "entry-deleted",
+        entryId: "entry-123",
+      });
       expect(Haptics.notificationAsync).toHaveBeenCalledWith("success");
     });
 

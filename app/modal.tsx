@@ -241,19 +241,19 @@ export default function CreateGoal() {
   };
 
   return (
-    <View className="flex-1 bg-zinc-900 pt-20">
+    <View className="flex-1 bg-app-dark-base pt-20">
       <View className="px-6">
         <View className="flex-row justify-between items-center mb-8">
           <Text className="text-3xl font-bold text-white">New Goal</Text>
           <TouchableOpacity
             onPress={() => router.back()}
-            className="bg-zinc-800 p-2 rounded-full"
+            className="bg-zinc-800 p-2 rounded-surface"
           >
             <X color="#a1a1aa" size={24} />
           </TouchableOpacity>
         </View>
 
-        <View className="bg-zinc-800 p-1 rounded-2xl flex-row mb-6">
+        <View className="bg-zinc-800 p-1 rounded-surface flex-row mb-6">
           {GOAL_TYPE_PAGES.map((goalType) => {
             const isActive = goalType === selectedType;
 
@@ -261,7 +261,7 @@ export default function CreateGoal() {
               <TouchableOpacity
                 key={goalType}
                 onPress={() => handleTypePress(goalType)}
-                className={`flex-1 py-3 rounded-xl ${
+                className={`flex-1 py-3 rounded-surface ${
                   isActive ? "bg-blue-600" : "bg-transparent"
                 }`}
               >
@@ -336,7 +336,7 @@ export default function CreateGoal() {
                   <TouchableOpacity
                     onPress={handleCounterSave}
                     activeOpacity={0.8}
-                    className="bg-blue-600 p-5 rounded-3xl mt-6 shadow-lg shadow-blue-900/20"
+                    className="bg-blue-600 p-5 rounded-surface mt-6 shadow-lg shadow-blue-900/20"
                   >
                     <Text className="text-white text-center font-bold text-lg">
                       Create Counter Goal
@@ -362,7 +362,7 @@ export default function CreateGoal() {
                   <TouchableOpacity
                     onPress={handleMeasurementSave}
                     activeOpacity={0.8}
-                    className="bg-blue-600 p-5 rounded-3xl mt-6 shadow-lg shadow-blue-900/20"
+                    className="bg-blue-600 p-5 rounded-surface mt-6 shadow-lg shadow-blue-900/20"
                   >
                     <Text className="text-white text-center font-bold text-lg">
                       Create Measurement Goal

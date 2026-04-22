@@ -36,9 +36,9 @@ export function RollingWindowFields({
               placeholder="e.g. 7"
               placeholderTextColor="#52525b"
               accessibilityLabel="Rolling surplus window length"
-              className="bg-zinc-800 p-5 rounded-2xl text-white text-lg border border-zinc-700/50 w-28 text-center"
+              className="bg-zinc-800 p-5 rounded-surface text-white text-lg border border-zinc-700/50 w-28 text-center"
             />
-            <View className="flex-1 bg-zinc-800 py-5 px-4 rounded-2xl border border-zinc-700/50">
+            <View className="flex-1 bg-zinc-800 py-5 px-4 rounded-surface border border-zinc-700/50">
               <Text className="text-zinc-300 text-base font-medium text-center">
                 {unitLabel}
               </Text>

@@ -156,7 +156,7 @@ export default function Dashboard() {
       : BASE_LIST_BOTTOM_PADDING;
 
   return (
-    <View className="flex-1 bg-zinc-50 dark:bg-zinc-950">
+    <View className="flex-1 bg-zinc-50 dark:bg-app-dark-base">
       <View className="flex-1 px-4 pt-20">
         <View className="mb-8 px-2 flex-row justify-between items-start">
           <View>
@@ -171,7 +171,7 @@ export default function Dashboard() {
             {(displayGoals.length > 1 || isReorderMode) && (
               <TouchableOpacity
                 onPress={() => setIsReorderMode((current) => !current)}
-                className="px-4 py-2 rounded-full bg-zinc-200 dark:bg-zinc-800"
+                className="px-4 py-2 rounded-surface bg-zinc-200 dark:bg-zinc-800"
                 accessibilityLabel={
                   isReorderMode ? "Finish reordering goals" : "Reorder goals"
                 }
@@ -253,7 +253,7 @@ export default function Dashboard() {
           onPress={() => router.push("/modal")}
           activeOpacity={0.9}
           pointerEvents={keyboardHeight > 0 ? "none" : "auto"}
-          className="absolute bottom-12 right-8 bg-blue-600 w-16 h-16 rounded-full items-center justify-center shadow-2xl shadow-blue-500/50"
+          className="absolute bottom-12 right-8 bg-blue-600 w-16 h-16 rounded-surface items-center justify-center shadow-2xl shadow-blue-500/50"
           style={{
             bottom:
               keyboardHeight > 0

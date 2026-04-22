@@ -8,6 +8,8 @@
  * This is used for the full ledger/history view.
  */
 
+import { addDays, addMonths, addWeeks } from "date-fns";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSettings } from "../contexts/SettingsContext";
@@ -75,7 +77,8 @@ function calculateAllPeriods(
   createdAt: Date,
   resetValue: number,
   resetUnit: ResetUnit,
-  timezone: string
+  timezone: string,
+  endReference: Date = new Date()
 ): { start: Date; end: Date | null }[] {
   if (resetUnit === "none" || resetValue === 0) {
     // Lifetime goal - single period from creation to now
@@ -83,7 +86,6 @@ function calculateAllPeriods(
   }
 
   const periods: { start: Date; end: Date | null }[] = [];
-  const now = new Date();
 
   let currentStart = calculatePeriodStartInTimezone(
     createdAt,
@@ -93,17 +95,13 @@ function calculateAllPeriods(
     createdAt // Start from creation time
   );
 
-  // Walk forward through periods until we're past now
-  while (currentStart <= now) {
-    const nextStart = calculatePeriodStartInTimezone(
-      createdAt,
+  // Walk forward through periods until we've covered the visible history range
+  while (currentStart <= endReference) {
+    const nextStart = getNextPeriodStart(
+      currentStart,
       resetValue,
       resetUnit,
-      timezone,
-      new Date(
-        currentStart.getTime() +
-          1000 * 60 * 60 * 24 * (resetUnit === "month" ? 32 : resetValue + 1)
-      )
+      timezone
     );
 
     // If nextStart is the same or earlier, we have a problem
@@ -114,7 +112,7 @@ function calculateAllPeriods(
 
     periods.push({ start: currentStart, end: nextStart });
 
-    if (nextStart > now) break;
+    if (nextStart > endReference) break;
     currentStart = nextStart;
   }
 
@@ -128,15 +126,10 @@ function formatPeriodLabel(
   start: Date,
   end: Date | null,
   timezone: string,
-  isCurrentPeriod: boolean,
   goalType: GoalType
 ): string {
   if (goalType === "measurement") {
     return "All Measurements";
-  }
-
-  if (isCurrentPeriod) {
-    return "Current Period";
   }
 
   const startStr = formatDateInTimezone(start, timezone, "MMM d");
@@ -144,13 +137,54 @@ function formatPeriodLabel(
     return `Since ${startStr}`;
   }
 
-  const endStr = formatDateInTimezone(
-    new Date(end.getTime() - 1), // End is exclusive, show last day
-    timezone,
-    "MMM d"
-  );
+  const inclusiveEnd = new Date(end.getTime() - 1);
+  const endStr = formatDateInTimezone(inclusiveEnd, timezone, "MMM d");
+
+  if (
+    getDateKeyInTimezone(start, timezone) ===
+    getDateKeyInTimezone(inclusiveEnd, timezone)
+  ) {
+    return startStr;
+  }
 
   return `${startStr} – ${endStr}`;
+}
+
+function getNextPeriodStart(
+  currentStart: Date,
+  resetValue: number,
+  resetUnit: ResetUnit,
+  timezone: string
+): Date {
+  const zonedStart = toZonedTime(currentStart, timezone);
+
+  let shiftedDate: Date;
+  switch (resetUnit) {
+    case "day":
+      shiftedDate = addDays(zonedStart, resetValue);
+      break;
+    case "week":
+      shiftedDate = addWeeks(zonedStart, resetValue);
+      break;
+    case "month":
+      shiftedDate = addMonths(zonedStart, resetValue);
+      break;
+    default:
+      return currentStart;
+  }
+
+  return fromZonedTime(
+    new Date(
+      shiftedDate.getFullYear(),
+      shiftedDate.getMonth(),
+      shiftedDate.getDate(),
+      0,
+      0,
+      0,
+      0
+    ),
+    timezone
+  );
 }
 
 function normalizeEntry(entry: Entry): NormalizedEntry {
@@ -202,6 +236,18 @@ function getNextCursor(entriesList: NormalizedEntry[]): HistoryCursor | null {
     timestamp: lastEntry.timestamp,
     id: lastEntry.id,
   };
+}
+
+async function fetchEntryById(entryId: string): Promise<NormalizedEntry | null> {
+  const result = await db
+    .select()
+    .from(entries)
+    .where(eq(entries.id, entryId))
+    .limit(1);
+
+  const entry = result[0];
+
+  return entry ? normalizeEntry(entry) : null;
 }
 
 /**
@@ -314,8 +360,28 @@ export function useGoalHistory(goal: Goal | null): UseGoalHistoryResult {
       return;
     }
 
-    const unsubscribe = queryCache.subscribe(() => {
-      fetchEntries();
+    const unsubscribe = queryCache.subscribe((event) => {
+      void (async () => {
+        try {
+          await fetchEntries();
+
+          if (event?.type !== "entry-updated" || !event.entryId) {
+            return;
+          }
+
+          const updatedEntry = await fetchEntryById(event.entryId);
+
+          if (!updatedEntry || updatedEntry.goalId !== goal.id) {
+            return;
+          }
+
+          setAllEntries((existingEntries) =>
+            mergeEntries(existingEntries, [updatedEntry])
+          );
+        } catch (err) {
+          console.error("[useGoalHistory] Error processing cache event:", err);
+        }
+      })();
     });
     return unsubscribe;
   }, [fetchEntries, goal]);
@@ -331,13 +397,19 @@ export function useGoalHistory(goal: Goal | null): UseGoalHistoryResult {
       goal.createdAt instanceof Date
         ? goal.createdAt
         : new Date(goal.createdAt ?? Date.now());
+    const latestLoadedEntry = allEntries[0]?.timestamp ?? null;
+    const historyEndReference =
+      latestLoadedEntry && latestLoadedEntry > new Date()
+        ? latestLoadedEntry
+        : new Date();
 
     // Calculate all period boundaries
     const periodBounds = calculateAllPeriods(
       createdAt,
       resetValue,
       resetUnit,
-      settings.timezone
+      settings.timezone,
+      historyEndReference
     );
 
     const currentPeriodStart = calculatePeriodStartInTimezone(
@@ -394,7 +466,6 @@ export function useGoalHistory(goal: Goal | null): UseGoalHistoryResult {
           start,
           end,
           settings.timezone,
-          isCurrentPeriod,
           goalType
         ),
         isCurrentPeriod,
