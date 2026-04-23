@@ -5,7 +5,13 @@
  */
 
 import { useRouter } from "expo-router";
-import { Check, ChevronDown, X } from "lucide-react-native";
+import {
+  ArchiveRestore,
+  Check,
+  ChevronDown,
+  Trash2,
+  X,
+} from "lucide-react-native";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -21,6 +27,7 @@ import { FireworksOverlay } from "../components/FireworksOverlay";
 import { useSettings } from "../contexts/SettingsContext";
 import { useGoalLifecycle } from "../hooks/useGoalLifecycle";
 import { useGoals } from "../hooks/useGoals";
+import { formatGoalTargetTypeLabel } from "../utils/goal-target";
 import {
   buildTimezoneOption,
   findTimezoneOption,
@@ -187,8 +194,7 @@ export default function Settings() {
             Archived Goals
           </Text>
           <Text className="text-zinc-600 text-xs mb-3 ml-1">
-            Restore archived goals or permanently delete them when you no longer
-            need the history.
+            Restore archived goals or permanently delete them.
           </Text>
           {isLoadingArchivedGoals ? (
             <View className="bg-zinc-800 p-5 rounded-surface border border-zinc-700/50">
@@ -219,7 +225,9 @@ export default function Settings() {
                       </Text>
                       <Text className="text-zinc-500 text-sm mt-1">
                         {goal.unit || "No unit"}
-                        {goal.target !== null ? ` • Target ${goal.target}` : ""}
+                        {goal.target !== null
+                          ? ` • ${formatGoalTargetTypeLabel(goal.targetType)} ${goal.target}`
+                          : ""}
                       </Text>
                     </View>
                     <View className="flex-row items-center gap-2">
@@ -228,22 +236,44 @@ export default function Settings() {
                           void handleUnarchiveGoal(goal.id);
                         }}
                         disabled={isLifecycleProcessing}
-                        className="bg-emerald-500/80 px-4 py-3 rounded-surface"
+                        className={`px-4 py-3 rounded-surface border flex-row items-center justify-center ${
+                          isGoalUnarchiving
+                            ? "bg-emerald-500 border-emerald-500"
+                            : "bg-zinc-900/60 border-zinc-700/60"
+                        }`}
                       >
-                        <Text className="text-white font-semibold">
+                        <ArchiveRestore
+                          color={isGoalUnarchiving ? "white" : "#6ee7b7"}
+                          size={18}
+                          strokeWidth={2.5}
+                        />
+                        <Text
+                          className={`font-semibold ml-2 ${
+                            isGoalUnarchiving ? "text-white" : "text-emerald-300"
+                          }`}
+                        >
                           {isGoalUnarchiving ? "Unarchiving..." : "Unarchive"}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleDeleteArchivedGoal(goal.id)}
                         disabled={isLifecycleProcessing}
-                        className={`px-4 py-3 rounded-surface border ${
+                        className={`px-4 py-3 rounded-surface border flex-row items-center justify-center ${
                           isGoalDeleting
                             ? "bg-red-500 border-red-500"
-                            : "bg-red-500/10 border-red-500/40"
+                            : "bg-zinc-900/60 border-zinc-700/60"
                         }`}
                       >
-                        <Text className="text-white font-semibold">
+                        <Trash2
+                          color={isGoalDeleting ? "white" : "#fda4af"}
+                          size={18}
+                          strokeWidth={2.5}
+                        />
+                        <Text
+                          className={`font-semibold ml-2 ${
+                            isGoalDeleting ? "text-white" : "text-rose-300"
+                          }`}
+                        >
                           {isGoalDeleting ? "Deleting..." : "Delete"}
                         </Text>
                       </TouchableOpacity>
@@ -270,7 +300,10 @@ export default function Settings() {
                 Developer / Creator: Edward Roy
               </Text>
               <Text className="text-zinc-400 text-sm mt-2">
-                Email: edwardroy@goaltracker.com [PLACEHOLDER]
+                LinkedIn & Github: @edwardroy72
+              </Text>
+              <Text className="text-zinc-400 text-sm mt-2">
+                Instagram: @edwardroy_
               </Text>
             </TouchableOpacity>
           </View>

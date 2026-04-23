@@ -9,7 +9,7 @@ import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerChangeEvent,
 } from "@react-native-community/datetimepicker";
-import { X } from "lucide-react-native";
+import { Save, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -273,11 +273,12 @@ export function EntryEditModal({
           <TouchableOpacity
             onPress={handleSave}
             disabled={isProcessing}
-            className={`py-4 rounded-surface items-center ${
+            className={`py-4 rounded-surface items-center flex-row justify-center ${
               isProcessing ? "bg-blue-600/50" : "bg-blue-600"
             }`}
           >
-            <Text className="text-white font-bold text-lg">
+            <Save color="white" size={20} strokeWidth={2.5} />
+            <Text className="text-white font-bold text-lg ml-2">
               {isProcessing ? "Saving..." : "Save Changes"}
             </Text>
           </TouchableOpacity>

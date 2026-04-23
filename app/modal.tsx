@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { X } from "lucide-react-native";
+import { Plus, X } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import {
@@ -21,7 +21,7 @@ import {
 import { db } from "../db/client";
 import { queryCache } from "../db/query-cache";
 import { entries, goals } from "../db/schema";
-import type { GoalType, ResetUnit } from "../types/domain";
+import type { GoalTargetType, GoalType, ResetUnit } from "../types/domain";
 import { buildGoalMutationValues } from "../utils/goal-config";
 import { buildMeasurementGoalMutationValues } from "../utils/measurement-goal-config";
 
@@ -53,6 +53,7 @@ export default function CreateGoal() {
   const [title, setTitle] = useState("");
   const [unit, setUnit] = useState("");
   const [target, setTarget] = useState("");
+  const [targetType, setTargetType] = useState<GoalTargetType>("min");
   const [resetValue, setResetValue] = useState("1");
   const [resetUnit, setResetUnit] = useState<ResetUnitType>("day");
   const [quickAdd1, setQuickAdd1] = useState("100");
@@ -64,6 +65,8 @@ export default function CreateGoal() {
   const [measurementTitle, setMeasurementTitle] = useState("");
   const [measurementUnit, setMeasurementUnit] = useState("");
   const [measurementTarget, setMeasurementTarget] = useState("");
+  const [measurementTargetType, setMeasurementTargetType] =
+    useState<GoalTargetType>("min");
   const [startingMeasurement, setStartingMeasurement] = useState("");
 
   useEffect(() => {
@@ -161,6 +164,7 @@ export default function CreateGoal() {
       title,
       unit,
       target,
+      targetType,
       resetValue,
       resetUnit,
       quickAdd1,
@@ -195,6 +199,7 @@ export default function CreateGoal() {
       title: measurementTitle,
       unit: measurementUnit,
       target: measurementTarget,
+      targetType: measurementTargetType,
       startingMeasurement,
     });
 
@@ -313,6 +318,7 @@ export default function CreateGoal() {
                     title={title}
                     unit={unit}
                     target={target}
+                    targetType={targetType}
                     resetValue={resetValue}
                     resetUnit={resetUnit}
                     quickAdd1={quickAdd1}
@@ -322,6 +328,7 @@ export default function CreateGoal() {
                     onTitleChange={setTitle}
                     onUnitChange={setUnit}
                     onTargetChange={setTarget}
+                    onTargetTypeChange={setTargetType}
                     onResetValueChange={setResetValue}
                     onResetUnitChange={setResetUnit}
                     onQuickAdd1Change={setQuickAdd1}
@@ -336,9 +343,10 @@ export default function CreateGoal() {
                   <TouchableOpacity
                     onPress={handleCounterSave}
                     activeOpacity={0.8}
-                    className="bg-blue-600 p-5 rounded-surface mt-6 shadow-lg shadow-blue-900/20"
+                    className="bg-blue-600 p-5 rounded-surface mt-6 shadow-lg shadow-blue-900/20 flex-row items-center justify-center"
                   >
-                    <Text className="text-white text-center font-bold text-lg">
+                    <Plus color="white" size={20} strokeWidth={2.5} />
+                    <Text className="text-white text-center font-bold text-lg ml-2">
                       Create Counter Goal
                     </Text>
                   </TouchableOpacity>
@@ -349,10 +357,12 @@ export default function CreateGoal() {
                     title={measurementTitle}
                     unit={measurementUnit}
                     target={measurementTarget}
+                    targetType={measurementTargetType}
                     startingMeasurement={startingMeasurement}
                     onTitleChange={setMeasurementTitle}
                     onUnitChange={setMeasurementUnit}
                     onTargetChange={setMeasurementTarget}
+                    onTargetTypeChange={setMeasurementTargetType}
                     onStartingMeasurementChange={setStartingMeasurement}
                     onInputFocus={(anchorY) =>
                       handleFormInputFocus("measurement", anchorY)
@@ -362,9 +372,10 @@ export default function CreateGoal() {
                   <TouchableOpacity
                     onPress={handleMeasurementSave}
                     activeOpacity={0.8}
-                    className="bg-blue-600 p-5 rounded-surface mt-6 shadow-lg shadow-blue-900/20"
+                    className="bg-blue-600 p-5 rounded-surface mt-6 shadow-lg shadow-blue-900/20 flex-row items-center justify-center"
                   >
-                    <Text className="text-white text-center font-bold text-lg">
+                    <Plus color="white" size={20} strokeWidth={2.5} />
+                    <Text className="text-white text-center font-bold text-lg ml-2">
                       Create Measurement Goal
                     </Text>
                   </TouchableOpacity>

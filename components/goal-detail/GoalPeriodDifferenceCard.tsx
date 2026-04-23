@@ -1,6 +1,7 @@
 import { Text, TouchableOpacity, View } from "react-native";
 import { getRollingWindowLabel, type GoalRollingSummary } from "../../services/goal-analytics";
 import type { Goal } from "../../types/domain";
+import { normalizeGoalTargetType } from "../../utils/goal-target";
 
 interface GoalPeriodDifferenceCardProps {
   goal: Goal;
@@ -37,12 +38,21 @@ function getStatusLabel(status: GoalRollingSummary["status"]): string {
   }
 }
 
-function getStatusTone(status: GoalRollingSummary["status"]): string {
+function getStatusTone(
+  status: GoalRollingSummary["status"],
+  targetType: Goal["targetType"]
+): string {
+  const normalizedTargetType = normalizeGoalTargetType(targetType);
+
   switch (status) {
     case "over":
-      return "text-green-600 dark:text-green-400";
+      return normalizedTargetType === "min"
+        ? "text-green-600 dark:text-green-400"
+        : "text-red-500 dark:text-red-400";
     case "under":
-      return "text-red-500 dark:text-red-400";
+      return normalizedTargetType === "min"
+        ? "text-red-500 dark:text-red-400"
+        : "text-green-600 dark:text-green-400";
     case "on-pace":
       return "text-blue-500 dark:text-blue-400";
   }
@@ -129,7 +139,10 @@ export function GoalPeriodDifferenceCard({
           ) : summary ? (
             <>
               <Text
-                className={`mb-2 text-4xl font-black ${getStatusTone(summary.status)}`}
+                className={`mb-2 text-4xl font-black ${getStatusTone(
+                  summary.status,
+                  goal.targetType
+                )}`}
               >
                 {formatSignedValue(summary.delta, goal.unit)}
               </Text>

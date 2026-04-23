@@ -9,7 +9,14 @@
 
 import { eq } from "drizzle-orm";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { X } from "lucide-react-native";
+import {
+  Archive,
+  ArchiveRestore,
+  Copy,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -28,7 +35,7 @@ import { queryCache } from "../../../db/query-cache";
 import { goals } from "../../../db/schema";
 import { useGoalById } from "../../../hooks/useGoalById";
 import { useGoalLifecycle } from "../../../hooks/useGoalLifecycle";
-import type { ResetUnit } from "../../../types/domain";
+import type { GoalTargetType, ResetUnit } from "../../../types/domain";
 import { buildGoalMutationValues } from "../../../utils/goal-config";
 import { buildMeasurementGoalMutationValues } from "../../../utils/measurement-goal-config";
 
@@ -53,6 +60,7 @@ export default function EditGoal() {
   const [title, setTitle] = useState("");
   const [unit, setUnit] = useState("");
   const [target, setTarget] = useState("");
+  const [targetType, setTargetType] = useState<GoalTargetType>("min");
   const [resetValue, setResetValue] = useState("1");
   const [resetUnit, setResetUnit] = useState<ResetUnitType>("day");
   const [quickAdd1, setQuickAdd1] = useState("1");
@@ -62,6 +70,8 @@ export default function EditGoal() {
   const [measurementTitle, setMeasurementTitle] = useState("");
   const [measurementUnit, setMeasurementUnit] = useState("");
   const [measurementTarget, setMeasurementTarget] = useState("");
+  const [measurementTargetType, setMeasurementTargetType] =
+    useState<GoalTargetType>("min");
   const [isSaving, setIsSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState(3);
@@ -105,6 +115,7 @@ export default function EditGoal() {
       setTitle(goal.title);
       setUnit(goal.unit || "");
       setTarget(goal.target !== null ? String(goal.target) : "");
+      setTargetType(goal.targetType ?? "min");
       setResetValue(String(goal.resetValue ?? 1));
       setResetUnit((goal.resetUnit as ResetUnitType) ?? "day");
       setQuickAdd1(String(goal.quickAdd1));
@@ -114,6 +125,7 @@ export default function EditGoal() {
       setMeasurementTitle(goal.title);
       setMeasurementUnit(goal.unit || "");
       setMeasurementTarget(goal.target !== null ? String(goal.target) : "");
+      setMeasurementTargetType(goal.targetType ?? "min");
     }
   }, [goal]);
 
@@ -125,11 +137,13 @@ export default function EditGoal() {
             title: measurementTitle,
             unit: measurementUnit,
             target: measurementTarget,
+            targetType: measurementTargetType,
           })
         : buildGoalMutationValues({
             title,
             unit,
             target,
+            targetType,
             resetValue,
             resetUnit,
             quickAdd1,
@@ -269,7 +283,7 @@ export default function EditGoal() {
           <Text className="text-zinc-500 text-sm mt-1">
             {isMeasurementGoal
               ? "Tracks point-in-time values and never resets."
-              : "Tracks cumulative progress with reset periods and quick adds."}
+              : "Tracks cumulative progress with reset periods."}
           </Text>
         </View>
       </View>
@@ -279,15 +293,18 @@ export default function EditGoal() {
           title={measurementTitle}
           unit={measurementUnit}
           target={measurementTarget}
+          targetType={measurementTargetType}
           onTitleChange={setMeasurementTitle}
           onUnitChange={setMeasurementUnit}
           onTargetChange={setMeasurementTarget}
+          onTargetTypeChange={setMeasurementTargetType}
         />
       ) : (
         <GoalFormFields
           title={title}
           unit={unit}
           target={target}
+          targetType={targetType}
           resetValue={resetValue}
           resetUnit={resetUnit}
           quickAdd1={quickAdd1}
@@ -297,6 +314,7 @@ export default function EditGoal() {
           onTitleChange={setTitle}
           onUnitChange={setUnit}
           onTargetChange={setTarget}
+          onTargetTypeChange={setTargetType}
           onResetValueChange={setResetValue}
           onResetUnitChange={setResetUnit}
           onQuickAdd1Change={setQuickAdd1}
@@ -311,12 +329,34 @@ export default function EditGoal() {
         onPress={handleSave}
         disabled={isSaving || isLifecycleProcessing}
         activeOpacity={0.8}
-        className={`p-5 rounded-surface mt-6 shadow-lg ${
+        className={`p-5 rounded-surface mt-6 shadow-lg flex-row items-center justify-center ${
           isSaving ? "bg-blue-800" : "bg-blue-600"
         }`}
       >
-        <Text className="text-white text-center font-bold text-lg">
+        <Save color="white" size={20} strokeWidth={2.5} />
+        <Text className="text-white text-center font-bold text-lg ml-2">
           {isSaving ? "Saving..." : "Save Changes"}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Delete Button */}
+      <TouchableOpacity
+        onPress={handleDelete}
+        disabled={isSaving || isLifecycleProcessing}
+        activeOpacity={0.8}
+        className={`p-5 rounded-surface mt-4 flex-row items-center justify-center ${
+          confirmingDelete
+            ? "bg-red-500"
+            : "bg-red-500/70 border border-red-500/30"
+        }`}
+      >
+        <Trash2 color="white" size={20} strokeWidth={2.5} />
+        <Text className={`text-center font-bold text-lg text-white ml-2`}>
+          {isDeletePending
+            ? "Deleting..."
+            : confirmingDelete
+            ? `Tap Again to Confirm Delete (${deleteCountdown})`
+            : "Delete Goal"}
         </Text>
       </TouchableOpacity>
 
@@ -325,13 +365,14 @@ export default function EditGoal() {
           onPress={handleDuplicate}
           disabled={isSaving || isLifecycleProcessing}
           activeOpacity={0.8}
-          className={`flex-1 p-5 rounded-surface border ${
+          className={`flex-1 p-5 rounded-surface border flex-row items-center justify-center ${
             isDuplicatePending
               ? "bg-zinc-700 border-zinc-600"
               : "bg-zinc-800 border-zinc-700"
           }`}
         >
-          <Text className="text-white text-center font-bold text-lg">
+          <Copy color="white" size={20} strokeWidth={2.5} />
+          <Text className="text-white text-center font-bold text-lg ml-2">
             {isDuplicatePending ? "Duplicating..." : "Duplicate"}
           </Text>
         </TouchableOpacity>
@@ -340,13 +381,18 @@ export default function EditGoal() {
           onPress={handleArchiveToggle}
           disabled={isSaving || isLifecycleProcessing}
           activeOpacity={0.8}
-          className={`flex-1 p-5 rounded-surface border ${
+          className={`flex-1 p-5 rounded-surface border flex-row items-center justify-center ${
             isArchivePending
               ? "bg-zinc-700 border-zinc-600"
               : "bg-zinc-800 border-zinc-700"
           }`}
         >
-          <Text className="text-center font-bold text-lg text-white">
+          {isArchived ? (
+            <ArchiveRestore color="white" size={20} strokeWidth={2.5} />
+          ) : (
+            <Archive color="white" size={20} strokeWidth={2.5} />
+          )}
+          <Text className="text-center font-bold text-lg text-white ml-2">
             {isArchivePending
               ? isArchived
                 ? "Unarchiving..."
@@ -357,26 +403,6 @@ export default function EditGoal() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Delete Button */}
-      <TouchableOpacity
-        onPress={handleDelete}
-        disabled={isSaving || isLifecycleProcessing}
-        activeOpacity={0.8}
-        className={`p-5 rounded-surface mt-4 ${
-          confirmingDelete
-            ? "bg-red-500"
-            : "bg-red-500/70 border border-red-500/30"
-        }`}
-      >
-        <Text className={`text-center font-bold text-lg text-white`}>
-          {isDeletePending
-            ? "Deleting..."
-            : confirmingDelete
-            ? `Tap Again to Confirm Delete (${deleteCountdown})`
-            : "Delete Goal"}
-        </Text>
-      </TouchableOpacity>
 
       <View className="h-20" />
     </ScrollView>

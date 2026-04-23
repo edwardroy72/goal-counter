@@ -98,7 +98,11 @@ export default function GoalDetail() {
     }
 
     const createdAt =
-      goal.createdAt instanceof Date ? goal.createdAt : new Date(goal.createdAt);
+      goal.createdAt instanceof Date
+        ? goal.createdAt
+        : goal.createdAt
+          ? new Date(goal.createdAt)
+          : new Date();
 
     return calculatePeriodStartInTimezone(
       createdAt,
@@ -146,6 +150,12 @@ export default function GoalDetail() {
   const currentValue = isMeasurementGoal
     ? latestEntry?.amount ?? null
     : currentTotal;
+  const latestEntryTimestamp =
+    latestEntry?.timestamp instanceof Date
+      ? latestEntry.timestamp
+      : latestEntry?.timestamp
+        ? new Date(latestEntry.timestamp)
+        : null;
 
   // Loading state
   if (isLoadingGoal) {
@@ -181,7 +191,7 @@ export default function GoalDetail() {
         goal={goal}
         currentValue={currentValue}
         periodStart={periodStart}
-        lastEntryAt={latestEntry?.timestamp ?? null}
+        lastEntryAt={latestEntryTimestamp}
       />
 
       {/* Tab Bar */}
@@ -252,6 +262,7 @@ function createPlaceholderGoal(id: string) {
     type: "counter" as const,
     unit: null,
     target: null,
+    targetType: "min" as const,
     resetValue: 1,
     resetUnit: "day" as const,
     rollingWindowValue: null,

@@ -64,6 +64,7 @@ const createMockGoal = (overrides: Partial<Goal> = {}): Goal => ({
   type: "counter",
   unit: "km",
   target: 100,
+  targetType: "min",
   resetValue: 1,
   resetUnit: "day",
   quickAdd1: 5,
@@ -96,7 +97,7 @@ describe("GoalCard", () => {
 
     expect(view.getByText("Daily Running")).toBeTruthy();
     expect(view.getByText("25 km")).toBeTruthy();
-    expect(view.getByText("(Target: 100 km)")).toBeTruthy();
+    expect(view.getByText("(Min 100 km)")).toBeTruthy();
     expect(view.getByText("75")).toBeTruthy();
     expect(view.getByText("10h left")).toBeTruthy();
     expect(view.getByText("+5")).toBeTruthy();

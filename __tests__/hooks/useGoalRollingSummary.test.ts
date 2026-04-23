@@ -113,6 +113,42 @@ describe("useGoalRollingSummary", () => {
     );
   });
 
+  it("counts a backdated entry before goal creation as its own period", async () => {
+    (db.where as jest.Mock).mockResolvedValue([
+      { amount: 3000, timestamp: new Date("2025-01-01T10:00:00Z") },
+    ]);
+
+    const { result } = renderHook(() =>
+      useGoalRollingSummary(
+        createMockGoal({
+          target: 1500,
+          targetType: "max",
+          resetUnit: "day",
+          resetValue: 1,
+          createdAt: new Date("2025-01-02T00:00:00Z"),
+        }),
+        {
+          now: new Date("2025-01-02T14:00:00Z"),
+          periodCount: 7,
+        }
+      )
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.summary).toEqual(
+      expect.objectContaining({
+        expectedTotal: 3000,
+        actualTotal: 3000,
+        comparedPeriodCount: 2,
+        delta: 0,
+        status: "on-pace",
+      })
+    );
+  });
+
   it("can count empty periods as zero when requested", async () => {
     (db.where as jest.Mock).mockResolvedValue([
       { amount: 1200, timestamp: new Date("2025-01-14T10:00:00Z") },

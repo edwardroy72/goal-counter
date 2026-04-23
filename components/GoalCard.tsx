@@ -18,6 +18,11 @@ import type { GoalMoveDirection } from "../hooks/useGoalOrdering";
 import { useGoalTotal } from "../hooks/useGoalTotal";
 import type { Goal } from "../types/domain";
 import {
+  formatGoalTargetTypeLabel,
+  getGoalTargetStatus,
+  normalizeGoalTargetType,
+} from "../utils/goal-target";
+import {
   calculatePeriodEndInTimezone,
   getCountdownTextWithTimezone,
 } from "../utils/timezone-utils";
@@ -64,47 +69,109 @@ function formatUpdatedAt(timestamp: Date | null | undefined): string {
  */
 function getRemainingToneClasses(
   remaining: number,
-  target: number
+  target: number,
+  targetType: Goal["targetType"]
 ): { value: string; label: string } {
-  const completionPercent = ((target - remaining) / target) * 100;
+  const normalizedTargetType = normalizeGoalTargetType(targetType);
+  const progressPercent = target > 0 ? ((target - remaining) / target) * 100 : 0;
 
-  if (completionPercent > 100) {
+  if (normalizedTargetType === "max") {
+    if (remaining < 0) {
+      return {
+        value: "text-red-500 dark:text-red-400",
+        label: "text-red-500/80 dark:text-red-300/80",
+      };
+    }
+
+    if (remaining <= target * 0.2) {
+      return {
+        value: "text-orange-500 dark:text-orange-400",
+        label: "text-orange-500/80 dark:text-orange-300/80",
+      };
+    }
+
     return {
-      value: "text-red-500 dark:text-red-400",
-      label: "text-red-500/80 dark:text-red-300/80",
+      value: "text-emerald-700 dark:text-emerald-400",
+      label: "text-emerald-600/80 dark:text-emerald-300/80",
     };
   }
-  if (completionPercent >= 80) {
+
+  if (remaining <= 0) {
+    return {
+      value: "text-emerald-700 dark:text-emerald-400",
+      label: "text-emerald-600/80 dark:text-emerald-300/80",
+    };
+  }
+
+  if (progressPercent >= 80) {
     return {
       value: "text-orange-500 dark:text-orange-400",
       label: "text-orange-500/80 dark:text-orange-300/80",
     };
   }
+
   return {
     value: "text-emerald-700 dark:text-emerald-400",
     label: "text-emerald-600/80 dark:text-emerald-300/80",
   };
 }
 
+function getMeasurementMetricTone(
+  goal: Goal,
+  latestValue: number
+): { tone: string; labelTone: string } {
+  const targetType = normalizeGoalTargetType(goal.targetType);
+  const status = getGoalTargetStatus(latestValue, goal.target ?? latestValue);
+
+  if (status === "on-pace") {
+    return {
+      tone: "text-emerald-600 dark:text-emerald-400",
+      labelTone: "text-emerald-600/80 dark:text-emerald-300/80",
+    };
+  }
+
+  if (targetType === "max" && status === "over") {
+    return {
+      tone: "text-red-500 dark:text-red-400",
+      labelTone: "text-red-500/80 dark:text-red-300/80",
+    };
+  }
+  return {
+    tone: "text-emerald-600 dark:text-emerald-400",
+    labelTone: "text-emerald-600/80 dark:text-emerald-300/80",
+  };
+}
+
 function getMeasurementSecondaryMetric(goal: Goal, latestValue: number | null) {
+  const targetTypeLabel = formatGoalTargetTypeLabel(goal.targetType);
+
   if (goal.target === null) {
     return null;
   }
 
   if (latestValue === null) {
     return {
-      label: "Target",
+      label: `${targetTypeLabel} Target`,
       value: formatValue(goal.target, goal.unit),
       tone: "text-zinc-900 dark:text-zinc-100",
       labelTone: "text-zinc-400 dark:text-zinc-400",
     } satisfies MeasurementSecondaryMetric;
   }
 
+  const delta = latestValue - goal.target;
+  const status = getGoalTargetStatus(latestValue, goal.target);
+  const tone = getMeasurementMetricTone(goal, latestValue);
+
   return {
-    label: "To Target",
-    value: formatValue(Math.abs(goal.target - latestValue), goal.unit),
-    tone: "text-emerald-600 dark:text-emerald-400",
-    labelTone: "text-emerald-600/80 dark:text-emerald-300/80",
+    label:
+      status === "on-pace"
+        ? "On Target"
+        : normalizeGoalTargetType(goal.targetType) === "max" && status === "over"
+          ? "Over Target"
+          : "To Target",
+    value: formatValue(Math.abs(delta), goal.unit),
+    tone: tone.tone,
+    labelTone: tone.labelTone,
   } satisfies MeasurementSecondaryMetric;
 }
 
@@ -200,6 +267,12 @@ export function GoalCard({
   const countdown = getCountdownTextWithTimezone(nextReset);
 
   const measurementValue = latestEntry?.amount ?? null;
+  const latestEntryTimestamp =
+    latestEntry?.timestamp instanceof Date
+      ? latestEntry.timestamp
+      : latestEntry?.timestamp
+        ? new Date(latestEntry.timestamp)
+        : null;
   const measurementSecondaryMetric = getMeasurementSecondaryMetric(
     goal,
     measurementValue
@@ -209,7 +282,7 @@ export function GoalCard({
   const remaining = goal.target !== null ? goal.target - currentTotal : null;
   const remainingTone =
     goal.target !== null && remaining !== null
-      ? getRemainingToneClasses(remaining, goal.target)
+      ? getRemainingToneClasses(remaining, goal.target, goal.targetType)
       : null;
 
   // Get quick add values (filter nulls)
@@ -344,7 +417,7 @@ export function GoalCard({
             </Text>
             {goal.target !== null ? (
               <Text className="text-zinc-600 text-[10px] font-bold uppercase italic tracking-tighter ml-2">
-                (Target: {formatValue(goal.target, goal.unit)})
+                ({formatGoalTargetTypeLabel(goal.targetType)} {formatValue(goal.target, goal.unit)})
               </Text>
             ) : null}
           </View>
@@ -389,7 +462,7 @@ export function GoalCard({
           </View>
 
           <Text className="text-zinc-500 dark:text-zinc-400 text-xs mb-5">
-            {formatUpdatedAt(latestEntry?.timestamp)}
+            {formatUpdatedAt(latestEntryTimestamp)}
           </Text>
         </>
       ) : (

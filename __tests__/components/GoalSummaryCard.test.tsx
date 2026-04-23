@@ -79,7 +79,7 @@ describe("GoalSummaryCard", () => {
     );
 
     expect(view.getByText("No data")).toBeTruthy();
-    expect(view.getByText("Target")).toBeTruthy();
+    expect(view.getByText("Min Target")).toBeTruthy();
     expect(view.getByText("70 kg")).toBeTruthy();
     expect(view.getByText("No measurements yet")).toBeTruthy();
   });

@@ -6,6 +6,7 @@
 export type ResetUnit = "day" | "week" | "month" | "none";
 export type RollingWindowUnit = Exclude<ResetUnit, "none">;
 export type GoalType = "counter" | "measurement";
+export type GoalTargetType = "min" | "max";
 
 export type GoalStatus = "active" | "archived";
 
@@ -22,6 +23,7 @@ export interface Goal {
   type?: GoalType | null;
   unit: string | null;
   target: number | null;
+  targetType?: GoalTargetType | null;
 
   // Reset configuration (nullable in schema due to defaults without notNull)
   resetValue: number | null;

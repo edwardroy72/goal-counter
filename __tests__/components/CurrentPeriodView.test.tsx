@@ -26,6 +26,7 @@ const createGoal = (overrides: Partial<Goal> = {}): Goal => ({
   type: "counter",
   unit: "mL",
   target: 2000,
+  targetType: "min",
   resetValue: 1,
   resetUnit: "day",
   quickAdd1: 250,
@@ -76,6 +77,7 @@ describe("CurrentPeriodView", () => {
         rollingSummary={{
           windowStart: new Date("2026-03-28T00:00:00.000Z"),
           windowEnd: new Date("2026-04-04T00:00:00.000Z"),
+          targetPerPeriod: 2000,
           windowValue: 7,
           windowUnit: "day",
           periodCount: 7,
@@ -120,6 +122,7 @@ describe("CurrentPeriodView", () => {
         rollingSummary={{
           windowStart: new Date("2026-03-28T00:00:00.000Z"),
           windowEnd: new Date("2026-04-04T00:00:00.000Z"),
+          targetPerPeriod: 2000,
           windowValue: 7,
           windowUnit: "day",
           periodCount: 7,
@@ -193,6 +196,7 @@ describe("CurrentPeriodView", () => {
         rollingSummary={{
           windowStart: new Date("2026-03-28T00:00:00.000Z"),
           windowEnd: new Date("2026-04-04T00:00:00.000Z"),
+          targetPerPeriod: 2000,
           windowValue: 7,
           windowUnit: "day",
           periodCount: 7,
@@ -215,5 +219,45 @@ describe("CurrentPeriodView", () => {
 
     expect(view.getByText("-2,000 mL")).toBeTruthy();
     expect(view.getByText("Target will be based on 1 day in this range.")).toBeTruthy();
+  });
+
+  it("treats over-target max goals as a bad state in the comparison card", () => {
+    const view = render(
+      <CurrentPeriodView
+        goal={createGoal({
+          title: "Calories",
+          unit: "kCal",
+          target: 1500,
+          targetType: "max",
+        })}
+        graph={baseGraph}
+        graphRange="7d"
+        isGraphLoading={false}
+        rollingSummary={{
+          windowStart: new Date("2026-03-28T00:00:00.000Z"),
+          windowEnd: new Date("2026-04-04T00:00:00.000Z"),
+          targetPerPeriod: 1500,
+          windowValue: 7,
+          windowUnit: "day",
+          periodCount: 7,
+          expectedTotal: 3000,
+          actualTotal: 4500,
+          comparedPeriodCount: 2,
+          delta: 1500,
+          status: "over",
+        }}
+        isRollingSummaryLoading={false}
+        rollingPeriodCounts={[7, 30, 90, 365]}
+        selectedRollingPeriodCount={7}
+        countEmptyRollingPeriods={false}
+        timezone="UTC"
+        onGraphRangeChange={onGraphRangeChange}
+        onCountEmptyRollingPeriodsChange={onCountEmptyRollingPeriodsChange}
+        onRollingPeriodCountChange={onRollingPeriodCountChange}
+      />
+    );
+
+    expect(view.getByText("+1,500 kCal").props.className).toContain("text-red-500");
+    expect(view.getByText(/Over target/)).toBeTruthy();
   });
 });

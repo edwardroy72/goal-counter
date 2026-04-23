@@ -1,9 +1,14 @@
-import type { ResetUnit, RollingWindowUnit } from "../types/domain";
+import type {
+  GoalTargetType,
+  ResetUnit,
+  RollingWindowUnit,
+} from "../types/domain";
 
 export interface GoalFormInput {
   title: string;
   unit: string;
   target: string;
+  targetType: GoalTargetType;
   resetValue: string;
   resetUnit: ResetUnit;
   quickAdd1: string;
@@ -16,6 +21,7 @@ export interface GoalMutationValues {
   title: string;
   unit: string | null;
   target: number | null;
+  targetType: GoalTargetType;
   resetValue: number;
   resetUnit: ResetUnit;
   quickAdd1: number;
@@ -100,6 +106,7 @@ export function buildGoalMutationValues(input: GoalFormInput):
       title,
       unit: input.unit.trim() || null,
       target,
+      targetType: input.targetType,
       resetValue: parsedResetValue,
       resetUnit: input.resetUnit,
       quickAdd1,

@@ -10,6 +10,7 @@ import type {
 import {
   calculatePeriodEndInTimezone,
   calculatePeriodStartInTimezone,
+  startOfDayInTimezone,
 } from "../utils/timezone-utils";
 
 export type GoalGraphRange = "7d" | "30d" | "90d" | "6m" | "1y" | "max";
@@ -130,6 +131,57 @@ function shiftBoundaryInTimezone(
   );
 
   return fromZonedTime(localMidnight, timezone);
+}
+
+function getAnchoredRollingPeriodStart(input: {
+  createdAt: Date | number | null | undefined;
+  resetValue: number;
+  resetUnit: Exclude<ResetUnit, "none">;
+  timezone: string;
+  referenceTime: Date;
+}): Date {
+  const createdAt =
+    input.createdAt instanceof Date
+      ? input.createdAt
+      : input.createdAt
+        ? new Date(input.createdAt)
+        : new Date();
+  const anchorStart = startOfDayInTimezone(createdAt, input.timezone);
+
+  if (input.referenceTime >= anchorStart) {
+    return calculatePeriodStartInTimezone(
+      createdAt,
+      input.resetValue,
+      input.resetUnit,
+      input.timezone,
+      input.referenceTime
+    );
+  }
+
+  const maxIterations = Math.min(
+    100000,
+    Math.ceil((365 * 100) / Math.max(input.resetValue, 1))
+  );
+  let iterations = 0;
+  let currentStart = anchorStart;
+
+  while (currentStart > input.referenceTime && iterations < maxIterations) {
+    const previousStart = shiftBoundaryInTimezone(
+      currentStart,
+      -input.resetValue,
+      input.resetUnit,
+      input.timezone
+    );
+
+    if (previousStart >= currentStart) {
+      break;
+    }
+
+    currentStart = previousStart;
+    iterations++;
+  }
+
+  return currentStart;
 }
 
 function shiftDateKey(dateKey: string, days: number): string {
@@ -421,26 +473,26 @@ export function countGoalRollingPeriodsWithEntries(input: {
       continue;
     }
 
-    const periodStart = calculatePeriodStartInTimezone(
-      createdAt instanceof Date ? createdAt : new Date(createdAt),
+    const periodStart = getAnchoredRollingPeriodStart({
+      createdAt,
       resetValue,
       resetUnit,
-      input.timezone,
-      timestamp
-    );
+      timezone: input.timezone,
+      referenceTime: timestamp,
+    });
 
     periodKeys.add(periodStart.toISOString());
   }
 
   // Always compare against the current active period, even if nothing has been logged yet.
   const currentPeriodReference = new Date(input.window.windowEnd.getTime() - 1);
-  const currentPeriodStart = calculatePeriodStartInTimezone(
-    createdAt instanceof Date ? createdAt : new Date(createdAt),
+  const currentPeriodStart = getAnchoredRollingPeriodStart({
+    createdAt,
     resetValue,
     resetUnit,
-    input.timezone,
-    currentPeriodReference
-  );
+    timezone: input.timezone,
+    referenceTime: currentPeriodReference,
+  });
 
   periodKeys.add(currentPeriodStart.toISOString());
 

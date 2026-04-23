@@ -10,6 +10,11 @@ import { Text, View } from "react-native";
 import { useSettings } from "../../contexts/SettingsContext";
 import type { Goal } from "../../types/domain";
 import {
+  formatGoalTargetTypeLabel,
+  getGoalTargetStatus,
+  normalizeGoalTargetType,
+} from "../../utils/goal-target";
+import {
   calculatePeriodEndInTimezone,
   formatDateInTimezone,
   getCountdownTextWithTimezone,
@@ -42,17 +47,41 @@ function formatValue(value: number, unit?: string | null): string {
  */
 function getRemainingToneClasses(
   remaining: number,
-  target: number
+  target: number,
+  targetType: Goal["targetType"]
 ): { value: string; label: string } {
-  const completionPercent = ((target - remaining) / target) * 100;
+  const normalizedTargetType = normalizeGoalTargetType(targetType);
+  const progressPercent = target > 0 ? ((target - remaining) / target) * 100 : 0;
 
-  if (completionPercent >= 100) {
+  if (normalizedTargetType === "max") {
+    if (remaining < 0) {
+      return {
+        value: "text-red-500 dark:text-red-400",
+        label: "text-red-500/80 dark:text-red-300/80",
+      };
+    }
+
+    if (remaining <= target * 0.2) {
+      return {
+        value: "text-orange-500 dark:text-orange-400",
+        label: "text-orange-500/80 dark:text-orange-300/80",
+      };
+    }
+
     return {
-      value: "text-red-500 dark:text-red-400",
-      label: "text-red-500/80 dark:text-red-300/80",
+      value: "text-emerald-700 dark:text-emerald-400",
+      label: "text-emerald-600/80 dark:text-emerald-300/80",
     };
   }
-  if (completionPercent >= 80) {
+
+  if (remaining <= 0) {
+    return {
+      value: "text-emerald-700 dark:text-emerald-400",
+      label: "text-emerald-600/80 dark:text-emerald-300/80",
+    };
+  }
+
+  if (progressPercent >= 80) {
     return {
       value: "text-orange-500 dark:text-orange-400",
       label: "text-orange-500/80 dark:text-orange-300/80",
@@ -79,28 +108,67 @@ function getMeasurementUpdatedLabel(
   )}`;
 }
 
+function getMeasurementMetricTone(
+  goal: Goal,
+  currentValue: number
+): { tone: string; labelTone: string } {
+  const targetType = normalizeGoalTargetType(goal.targetType);
+  const status = getGoalTargetStatus(currentValue, goal.target ?? currentValue);
+
+  if (status === "on-pace") {
+    return {
+      tone: "text-emerald-600 dark:text-emerald-400",
+      labelTone: "text-emerald-600/80 dark:text-emerald-300/80",
+    };
+  }
+
+  if (targetType === "max" && status === "over") {
+    return {
+      tone: "text-red-500 dark:text-red-400",
+      labelTone: "text-red-500/80 dark:text-red-300/80",
+    };
+  }
+
+  return {
+    tone: "text-emerald-600 dark:text-emerald-400",
+    labelTone: "text-emerald-600/80 dark:text-emerald-300/80",
+  };
+}
+
 function getMeasurementSecondaryMetric(input: {
   goal: Goal;
   currentValue: number | null;
 }): MeasurementSecondaryMetric | null {
+  const targetTypeLabel = formatGoalTargetTypeLabel(input.goal.targetType);
+
   if (input.goal.target === null) {
     return null;
   }
 
   if (input.currentValue === null) {
     return {
-      label: "Target",
+      label: `${targetTypeLabel} Target`,
       value: formatValue(input.goal.target, input.goal.unit),
       tone: "text-zinc-900 dark:text-zinc-100",
       labelTone: "text-zinc-400 dark:text-zinc-400",
     };
   }
 
+  const delta = input.currentValue - input.goal.target;
+  const status = getGoalTargetStatus(input.currentValue, input.goal.target);
+  const tone = getMeasurementMetricTone(input.goal, input.currentValue);
+
   return {
-    label: "To Target",
-    value: formatValue(Math.abs(input.goal.target - input.currentValue), input.goal.unit),
-    tone: "text-emerald-600 dark:text-emerald-400",
-    labelTone: "text-emerald-600/80 dark:text-emerald-300/80",
+    label:
+      status === "on-pace"
+        ? "On Target"
+        : normalizeGoalTargetType(input.goal.targetType) === "max" &&
+            status === "over"
+          ? "Over Target"
+          : "To Target",
+    value: formatValue(Math.abs(delta), input.goal.unit),
+    tone: tone.tone,
+    labelTone: tone.labelTone,
   };
 }
 
@@ -179,7 +247,7 @@ export function GoalSummaryCard({
   const remaining = goal.target !== null ? goal.target - safeCurrentTotal : null;
   const remainingTone =
     goal.target !== null && remaining !== null
-      ? getRemainingToneClasses(remaining, goal.target)
+      ? getRemainingToneClasses(remaining, goal.target, goal.targetType)
       : null;
 
   // Calculate progress percentage
@@ -251,7 +319,13 @@ export function GoalSummaryCard({
         <View className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
           <View
             className={`h-full rounded-full ${
-              progressPercent >= 100 ? "bg-green-500" : "bg-blue-500"
+              normalizeGoalTargetType(goal.targetType) === "max"
+                ? safeCurrentTotal > (goal.target ?? 0)
+                  ? "bg-red-500"
+                  : "bg-blue-500"
+                : progressPercent >= 100
+                  ? "bg-green-500"
+                  : "bg-blue-500"
             }`}
             style={{ width: `${progressPercent}%` }}
           />
@@ -261,7 +335,8 @@ export function GoalSummaryCard({
       {goal.target !== null && (
         <View className="flex-row justify-end mt-2">
           <Text className="text-zinc-400 text-xs">
-            Target: {goal.target.toLocaleString()} {goal.unit || ""}
+            {formatGoalTargetTypeLabel(goal.targetType)} target:{" "}
+            {goal.target.toLocaleString()} {goal.unit || ""}
           </Text>
         </View>
       )}

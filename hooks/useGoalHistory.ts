@@ -22,6 +22,7 @@ import {
   formatDateInTimezone,
   formatDisplayDateInTimezone,
   getDateKeyInTimezone,
+  startOfDayInTimezone,
 } from "../utils/timezone-utils";
 
 /**
@@ -78,21 +79,30 @@ function calculateAllPeriods(
   resetValue: number,
   resetUnit: ResetUnit,
   timezone: string,
+  startReference: Date = createdAt,
   endReference: Date = new Date()
 ): { start: Date; end: Date | null }[] {
   if (resetUnit === "none" || resetValue === 0) {
     // Lifetime goal - single period from creation to now
-    return [{ start: createdAt, end: null }];
+    return [
+      {
+        start: startOfDayInTimezone(
+          startReference < createdAt ? startReference : createdAt,
+          timezone
+        ),
+        end: null,
+      },
+    ];
   }
 
   const periods: { start: Date; end: Date | null }[] = [];
 
-  let currentStart = calculatePeriodStartInTimezone(
+  let currentStart = getAnchoredPeriodStart(
     createdAt,
     resetValue,
     resetUnit,
     timezone,
-    createdAt // Start from creation time
+    startReference
   );
 
   // Walk forward through periods until we've covered the visible history range
@@ -117,6 +127,88 @@ function calculateAllPeriods(
   }
 
   return periods.reverse(); // Most recent first
+}
+
+function getPreviousPeriodStart(
+  currentStart: Date,
+  resetValue: number,
+  resetUnit: ResetUnit,
+  timezone: string
+): Date {
+  const zonedStart = toZonedTime(currentStart, timezone);
+
+  let shiftedDate: Date;
+  switch (resetUnit) {
+    case "day":
+      shiftedDate = addDays(zonedStart, -resetValue);
+      break;
+    case "week":
+      shiftedDate = addWeeks(zonedStart, -resetValue);
+      break;
+    case "month":
+      shiftedDate = addMonths(zonedStart, -resetValue);
+      break;
+    default:
+      return currentStart;
+  }
+
+  return fromZonedTime(
+    new Date(
+      shiftedDate.getFullYear(),
+      shiftedDate.getMonth(),
+      shiftedDate.getDate(),
+      0,
+      0,
+      0,
+      0
+    ),
+    timezone
+  );
+}
+
+function getAnchoredPeriodStart(
+  createdAt: Date,
+  resetValue: number,
+  resetUnit: ResetUnit,
+  timezone: string,
+  referenceTime: Date
+): Date {
+  const anchorStart = startOfDayInTimezone(createdAt, timezone);
+
+  if (referenceTime >= anchorStart) {
+    return calculatePeriodStartInTimezone(
+      createdAt,
+      resetValue,
+      resetUnit,
+      timezone,
+      referenceTime
+    );
+  }
+
+  const maxIterations = Math.min(
+    100000,
+    Math.ceil((365 * 100) / Math.max(resetValue, 1))
+  );
+  let iterations = 0;
+  let currentStart = anchorStart;
+
+  while (currentStart > referenceTime && iterations < maxIterations) {
+    const previousStart = getPreviousPeriodStart(
+      currentStart,
+      resetValue,
+      resetUnit,
+      timezone
+    );
+
+    if (previousStart >= currentStart) {
+      break;
+    }
+
+    currentStart = previousStart;
+    iterations++;
+  }
+
+  return currentStart;
 }
 
 /**
@@ -398,6 +490,11 @@ export function useGoalHistory(goal: Goal | null): UseGoalHistoryResult {
         ? goal.createdAt
         : new Date(goal.createdAt ?? Date.now());
     const latestLoadedEntry = allEntries[0]?.timestamp ?? null;
+    const oldestLoadedEntry = allEntries[allEntries.length - 1]?.timestamp ?? null;
+    const historyStartReference =
+      oldestLoadedEntry && oldestLoadedEntry < createdAt
+        ? oldestLoadedEntry
+        : createdAt;
     const historyEndReference =
       latestLoadedEntry && latestLoadedEntry > new Date()
         ? latestLoadedEntry
@@ -409,6 +506,7 @@ export function useGoalHistory(goal: Goal | null): UseGoalHistoryResult {
       resetValue,
       resetUnit,
       settings.timezone,
+      historyStartReference,
       historyEndReference
     );
 

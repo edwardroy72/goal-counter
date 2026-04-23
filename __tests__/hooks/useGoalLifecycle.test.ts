@@ -104,6 +104,7 @@ describe("useGoalLifecycle", () => {
         title: "Daily Water",
         unit: "mL",
         target: 3000,
+        targetType: "min",
         resetValue: 1,
         resetUnit: "day",
         rollingWindowValue: 7,
@@ -126,22 +127,26 @@ describe("useGoalLifecycle", () => {
     });
 
     expect(duplicatedGoalId).toBe("goal-copy-1");
-    expect(mockInsertValues).toHaveBeenCalledWith({
-      title: "Daily Water Copy",
-      unit: "mL",
-      target: 3000,
-      resetValue: 1,
-      resetUnit: "day",
-      rollingWindowValue: 7,
-      rollingWindowUnit: "day",
-      quickAdd1: 250,
-      quickAdd2: 500,
-      quickAdd3: null,
-      quickAdd4: null,
-      sortOrder: expect.any(Number),
-      status: "active",
-      timezone: "Australia/Sydney",
-    });
+    expect(mockInsertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Daily Water Copy",
+        type: "counter",
+        unit: "mL",
+        target: 3000,
+        targetType: "min",
+        resetValue: 1,
+        resetUnit: "day",
+        rollingWindowValue: null,
+        rollingWindowUnit: null,
+        quickAdd1: 250,
+        quickAdd2: 500,
+        quickAdd3: null,
+        quickAdd4: null,
+        sortOrder: expect.any(Number),
+        status: "active",
+        timezone: "Australia/Sydney",
+      })
+    );
     expect(queryCache.invalidate).toHaveBeenCalled();
   });
 

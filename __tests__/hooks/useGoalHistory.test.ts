@@ -588,5 +588,56 @@ describe("useGoalHistory", () => {
         expect(visibleEntryIds).toContain("edited-entry");
       });
     });
+
+    it("keeps a backdated edited entry visible when it moves before the goal creation date", async () => {
+      const goal = createMockGoal({
+        resetValue: 1,
+        resetUnit: "day",
+        createdAt: new Date("2025-01-02T00:00:00Z"),
+      });
+      const initialEntry = createMockEntry(
+        goal.id,
+        300,
+        new Date("2025-01-02T10:00:00Z"),
+        "edited-entry"
+      );
+      const backdatedEntry = createMockEntry(
+        goal.id,
+        300,
+        new Date("2025-01-01T10:00:00Z"),
+        "edited-entry"
+      );
+
+      (db.limit as jest.Mock)
+        .mockResolvedValueOnce([initialEntry])
+        .mockResolvedValueOnce([backdatedEntry])
+        .mockResolvedValueOnce([backdatedEntry]);
+
+      const { result } = renderHook(() => useGoalHistory(goal));
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const cacheListener = (queryCache.subscribe as jest.Mock).mock.calls[0]?.[0];
+
+      expect(cacheListener).toEqual(expect.any(Function));
+
+      await act(async () => {
+        cacheListener?.({
+          type: "entry-updated",
+          entryId: "edited-entry",
+        });
+      });
+
+      await waitFor(() => {
+        const visibleEntryIds = result.current.periods.flatMap((period) =>
+          period.days.flatMap((day) => day.entries.map((entry) => entry.id))
+        );
+
+        expect(visibleEntryIds).toContain("edited-entry");
+        expect(result.current.periods[0]?.periodLabel).toBe("Jan 1");
+      });
+    });
   });
 });

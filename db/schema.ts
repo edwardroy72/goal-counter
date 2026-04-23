@@ -19,6 +19,11 @@ export const GoalType = {
   MEASUREMENT: "measurement",
 } as const;
 
+export const GoalTargetType = {
+  MIN: "min",
+  MAX: "max",
+} as const;
+
 // --- Tables ---
 
 export const goals = sqliteTable("goals", {
@@ -31,6 +36,9 @@ export const goals = sqliteTable("goals", {
     .default("counter"),
   unit: text("unit"), // e.g., "kg", "mL"
   target: real("target"), // Float for 2-decimal precision
+  targetType: text("target_type")
+    .$type<(typeof GoalTargetType)[keyof typeof GoalTargetType]>()
+    .default("min"),
 
   // Reset Interval Logic
   resetValue: integer("reset_value").default(1),

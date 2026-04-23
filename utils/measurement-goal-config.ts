@@ -1,7 +1,10 @@
+import type { GoalTargetType } from "../types/domain";
+
 export interface MeasurementGoalFormInput {
   title: string;
   unit: string;
   target: string;
+  targetType: GoalTargetType;
   startingMeasurement?: string;
 }
 
@@ -10,6 +13,7 @@ export interface MeasurementGoalMutationValues {
   type: "measurement";
   unit: string | null;
   target: number | null;
+  targetType: GoalTargetType;
   resetValue: number;
   resetUnit: "none";
   rollingWindowValue: null;
@@ -87,6 +91,7 @@ export function buildMeasurementGoalMutationValues(
       type: "measurement",
       unit: input.unit.trim() || null,
       target,
+      targetType: input.targetType,
       resetValue: 0,
       resetUnit: "none",
       rollingWindowValue: null,

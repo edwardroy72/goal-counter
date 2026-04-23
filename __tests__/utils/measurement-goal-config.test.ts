@@ -6,6 +6,7 @@ describe("measurement goal config helpers", () => {
       title: " Body Weight ",
       unit: " kg ",
       target: "70.5",
+      targetType: "max",
       startingMeasurement: "72.4",
     });
 
@@ -16,6 +17,7 @@ describe("measurement goal config helpers", () => {
         type: "measurement",
         unit: "kg",
         target: 70.5,
+        targetType: "max",
         resetValue: 0,
         resetUnit: "none",
         rollingWindowValue: null,
@@ -34,6 +36,7 @@ describe("measurement goal config helpers", () => {
       title: "   ",
       unit: "kg",
       target: "",
+      targetType: "min",
     });
 
     expect(result).toEqual({
@@ -50,6 +53,7 @@ describe("measurement goal config helpers", () => {
       title: "Body Weight",
       unit: "kg",
       target: "abc",
+      targetType: "min",
     });
 
     expect(result).toEqual({
@@ -66,6 +70,7 @@ describe("measurement goal config helpers", () => {
       title: "Body Weight",
       unit: "kg",
       target: "70",
+      targetType: "min",
       startingMeasurement: "abc",
     });
 

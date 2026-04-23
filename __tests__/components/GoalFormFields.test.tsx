@@ -12,6 +12,7 @@ describe("GoalFormFields", () => {
         title="Water"
         unit="mL"
         target="2000"
+        targetType="min"
         resetValue="1"
         resetUnit="day"
         quickAdd1="250"
@@ -21,6 +22,7 @@ describe("GoalFormFields", () => {
         onTitleChange={onTitleChange}
         onUnitChange={jest.fn()}
         onTargetChange={jest.fn()}
+        onTargetTypeChange={jest.fn()}
         onResetValueChange={jest.fn()}
         onResetUnitChange={onResetUnitChange}
         onQuickAdd1Change={jest.fn()}
@@ -37,6 +39,7 @@ describe("GoalFormFields", () => {
     expect(onTitleChange).toHaveBeenCalledWith("Sleep");
     expect(onResetUnitChange).toHaveBeenCalledWith("week");
     expect(onQuickAdd4Change).toHaveBeenCalledWith("1000");
+    expect(view.getByText("Target Type")).toBeTruthy();
     expect(view.queryByText("Rolling Surplus Window")).toBeNull();
   });
 
@@ -46,6 +49,7 @@ describe("GoalFormFields", () => {
         title=""
         unit=""
         target=""
+        targetType="min"
         resetValue="1"
         resetUnit="none"
         quickAdd1="1"
@@ -55,6 +59,7 @@ describe("GoalFormFields", () => {
         onTitleChange={jest.fn()}
         onUnitChange={jest.fn()}
         onTargetChange={jest.fn()}
+        onTargetTypeChange={jest.fn()}
         onResetValueChange={jest.fn()}
         onResetUnitChange={jest.fn()}
         onQuickAdd1Change={jest.fn()}
@@ -65,6 +70,7 @@ describe("GoalFormFields", () => {
     );
 
     expect(view.queryByText("Rolling Surplus Window")).toBeNull();
+    expect(view.queryByText("Target Type")).toBeNull();
   });
 
   it("reports focus for lower inputs so the parent can scroll them into view", () => {
@@ -75,6 +81,7 @@ describe("GoalFormFields", () => {
         title=""
         unit=""
         target=""
+        targetType="min"
         resetValue="1"
         resetUnit="day"
         quickAdd1="100"
@@ -84,6 +91,7 @@ describe("GoalFormFields", () => {
         onTitleChange={jest.fn()}
         onUnitChange={jest.fn()}
         onTargetChange={jest.fn()}
+        onTargetTypeChange={jest.fn()}
         onResetValueChange={jest.fn()}
         onResetUnitChange={jest.fn()}
         onQuickAdd1Change={jest.fn()}

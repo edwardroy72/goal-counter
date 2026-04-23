@@ -24,6 +24,7 @@ export function createMockGoal(overrides: Partial<Goal> = {}): Goal {
     type: "counter",
     unit: "units",
     target: 100,
+    targetType: "min",
     resetValue: 1,
     resetUnit: "day" as ResetUnit,
     rollingWindowValue: null,
